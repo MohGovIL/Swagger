@@ -3,7 +3,7 @@
 This repository hosts the OpenAPI definitions and generated documentation for the PCM FHIR and OAuth2 APIs. It is intended as a self-contained reference for API consumers and implementers, with both split and combined specifications.
 
 ## API Docs
-* **📘 PCM API Docs (Redoc HTML)**: https://MohGovIL.github.io/Swagger/docs/api-docs.html
+* **📘 PCM API Docs (Redoc HTML)**: [https://MohGovIL.github.io/Swagger/docs/api-docs.html](https://MohGovIL.github.io/Swagger/docs/api-docs.html)
 
 ## OpenAPI Specs
 * `docs/openapi-fhir.yaml`: FHIR REST OpenAPI spec.
@@ -24,3 +24,4 @@ If you want separate docs, you can build them from the split specs:
 npx @redocly/cli build-docs docs/openapi-fhir.yaml -o docs/api-docs-fhir.html
 npx @redocly/cli build-docs docs/openapi-oauth.yaml -o docs/api-docs-oauth.html
 ```
+
