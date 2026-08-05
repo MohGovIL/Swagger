@@ -1,6 +1,6 @@
 {
   "resourceType": "HealthcareService",
-  "id": "svc-catalog-cross-org-summary",
+  "id": "svc-catalog-new-service-pending",
   "meta": {
     "profile": [
       "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-healthcareservice-canonical"
@@ -15,13 +15,13 @@
   },
   "text": {
     "status": "generated",
-    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Active canonical service definition for cross-organization summaries. PCM uses it to derive consent period and access mode.</p><p>FHIR REST: <code>GET https://pcm.fhir.health.gov.il/r4/HealthcareService/{catalog-id}</code></p></div>"
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Pending canonical service definition created by PCM after Hospital A submits a full new-service registration request.</p><p>FHIR REST: <code>GET https://pcm.fhir.health.gov.il/r4/HealthcareService/{catalog-id}</code></p></div>"
   },
   "identifier": [
     {
       "use": "official",
       "system": "http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-catalog-id",
-      "value": "PCM-CAT-0101"
+      "value": "PCM-CAT-0201"
     }
   ],
   "category": [
@@ -126,7 +126,7 @@
       "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-information-bucket"
     }
   ],
-  "active": true,
+  "active": false,
   "name": "Cross-Organization Patient Summary",
   "extraDetails": "Lets a care team view recent laboratory results and medication information to understand current treatment, avoid duplicate tests, and reduce medication-safety risks."
 }

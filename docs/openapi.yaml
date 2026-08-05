@@ -1,14 +1,34 @@
 openapi: 3.1.0
 info:
   title: PCM API (FHIR + OAuth2)
-  version: "2026-01-05"
+  version: "0.3.2"
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
   description: |
     Combined OpenAPI entry point that references the FHIR and OAuth2 specifications.
+    The production PCM OAuth origin is `https://pcm2m.health.gov.il`, and the
+    production PCM FHIR base is `https://pcm2m.health.gov.il/r4`; non-production
+    deployments use their assigned environment values. Participant hosts under
+    `example.org` are placeholders. Canonical, identifier-system, and other named
+    protocol URIs remain the published identifiers. Every PCM HTTP endpoint
+    requires mTLS, including discovery, metadata, authorization, token,
+    introspection, and FHIR interactions.
+    Public FHIR POST/PUT interactions use closed request projections and reject
+    prohibited content atomically with OperationOutcome responses. MoH/PCM owns
+    Organization.active; Data Sources expose runtime availability through the
+    status of their currently referenced Endpoint; Service Providers control only
+    the documented HealthcareService instance business-status transitions.
+    For FHIR searches, authorization is a hard ceiling: every primary match must both
+    satisfy the supplied search criteria and be authorized for the caller to read.
+    Search filters can only narrow the authorized primary-result set. `_include` and
+    `_include:iterate` can add only related resources that the caller is authorized
+    to read under the same resource-visibility rules; they never widen access.
 servers:
-  - url: https://pcm.fhir.health.gov.il/r4
-    description: PCM FHIR base URL
-  - url: https://pcm.fhir.health.gov.il
-    description: PCM OAuth2 base URL
+  - url: https://pcm2m.health.gov.il/r4
+    description: Production PCM FHIR base URL; use the assigned base outside production. Every endpoint requires mTLS.
+  - url: https://pcm2m.health.gov.il
+    description: Production PCM OAuth2 origin; use the assigned origin outside production. Every endpoint requires mTLS.
 
 tags:
   - name: Organization
@@ -16,11 +36,9 @@ tags:
   - name: Endpoint
     description: FHIR server endpoints for data sources.
   - name: HealthcareService
-    description: Canonical and instance service definitions.
+    description: Canonical catalog services and provider service registrations.
   - name: Consent
-    description: Consent requests and approvals. Deletion is not supported; service providers may only deactivate consents they created.
-  - name: VerificationResult
-    description: Approvals for service instances.
+    description: Consent request creation, owned consent read/search, and owned consent deactivation. Deletion is not supported.
   - name: CapabilityStatement
     description: Server metadata and supported interactions.
   - name: SMART
@@ -28,31 +46,45 @@ tags:
   - name: OAuth2
     description: Token issuance and introspection.
 
+security:
+  - mtlsTransport: []
+    bearerAuth: []
+
 paths:
   /.well-known/smart-configuration:
     $ref: "./openapi-fhir.yaml#/paths/~1.well-known~1smart-configuration"
+  /.well-known/oauth-authorization-server:
+    $ref: "./openapi-oauth.yaml#/paths/~1.well-known~1oauth-authorization-server"
+  /authorize:
+    $ref: "./openapi-oauth.yaml#/paths/~1authorize"
   /metadata:
     $ref: "./openapi-fhir.yaml#/paths/~1metadata"
   /Organization:
     $ref: "./openapi-fhir.yaml#/paths/~1Organization"
+  /Organization/_search:
+    $ref: "./openapi-fhir.yaml#/paths/~1Organization~1_search"
   /Organization/{id}:
     $ref: "./openapi-fhir.yaml#/paths/~1Organization~1{id}"
   /Endpoint:
     $ref: "./openapi-fhir.yaml#/paths/~1Endpoint"
+  /Endpoint/_search:
+    $ref: "./openapi-fhir.yaml#/paths/~1Endpoint~1_search"
   /Endpoint/{id}:
     $ref: "./openapi-fhir.yaml#/paths/~1Endpoint~1{id}"
   /HealthcareService:
     $ref: "./openapi-fhir.yaml#/paths/~1HealthcareService"
+  /HealthcareService/_search:
+    $ref: "./openapi-fhir.yaml#/paths/~1HealthcareService~1_search"
   /HealthcareService/{id}:
     $ref: "./openapi-fhir.yaml#/paths/~1HealthcareService~1{id}"
+  /HealthcareService/{id}/$request-catalog-update:
+    $ref: "./openapi-fhir.yaml#/paths/~1HealthcareService~1{id}~1$request-catalog-update"
   /Consent:
     $ref: "./openapi-fhir.yaml#/paths/~1Consent"
+  /Consent/_search:
+    $ref: "./openapi-fhir.yaml#/paths/~1Consent~1_search"
   /Consent/{id}:
     $ref: "./openapi-fhir.yaml#/paths/~1Consent~1{id}"
-  /VerificationResult:
-    $ref: "./openapi-fhir.yaml#/paths/~1VerificationResult"
-  /VerificationResult/{id}:
-    $ref: "./openapi-fhir.yaml#/paths/~1VerificationResult~1{id}"
   /token:
     $ref: "./openapi-oauth.yaml#/paths/~1token"
   /introspect:

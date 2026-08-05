@@ -15,7 +15,7 @@
   },
   "text": {
     "status": "generated",
-    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">CapabilityStatement for the PCM FHIR server. It supports Organization onboarding updates, Endpoint registration, HealthcareService catalog/instance management, VerificationResult approvals, and Consent lifecycle operations as documented in pcm_process_flow.md.</div>"
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">CapabilityStatement for the PCM FHIR server. It supports Organization onboarding updates, Endpoint registration, HealthcareService catalog/instance management, and Consent lifecycle operations as documented in pcm_process_flow.md. HEAD is supported on resource read URLs for existence checks.</div>"
   },
   "rest": [
     {
@@ -143,17 +143,17 @@
             {
               "name": "identifier",
               "type": "token",
-              "documentation": "Search by HealthcareService business identifier."
+              "documentation": "Search by HealthcareService business identifier (catalog or instance identifier system)."
             },
             {
-              "name": "category",
+              "name": "service-category",
               "type": "token",
-              "documentation": "Search by HealthcareService.category."
+              "documentation": "Search by HealthcareService.category using the FHIR R4 service-category search parameter."
             },
             {
-              "name": "type",
+              "name": "service-type",
               "type": "token",
-              "documentation": "Search by HealthcareService.type."
+              "documentation": "Search by HealthcareService.type using the FHIR R4 service-type search parameter."
             },
             {
               "name": "name",
@@ -161,13 +161,13 @@
               "documentation": "Search by HealthcareService.name."
             },
             {
-              "name": "providedBy",
+              "name": "organization",
               "type": "reference",
-              "documentation": "Search by HealthcareService.providedBy (instance profile only)."
+              "documentation": "Search by HealthcareService.providedBy using the FHIR R4 organization search parameter (instance profile only)."
             }
           ],
           "type": "HealthcareService",
-          "documentation": "Catalog definitions and instance registrations tied to organizations."
+          "documentation": "Catalog definitions and instance registrations tied to organizations. Hosted/returned resources conform to the catalog and instance profiles. Create uses the documented submit payload shapes; submit profiles are illustrative only and are not sent in meta.profile. Public usability is exposed through HealthcareService.active only."
         },
         {
           "interaction": [
@@ -203,7 +203,7 @@
             {
               "name": "patient",
               "type": "reference",
-              "documentation": "Search by patient logical reference (supports patient.identifier chain)."
+              "documentation": "Search by patient logical reference. Identifier search uses the FHIR reference identifier modifier: patient:identifier=system|value."
             },
             {
               "name": "pcm-service",
@@ -213,38 +213,17 @@
             }
           ],
           "searchInclude": [
-            "Consent:actor"
+            "Consent:actor",
+            "Organization:endpoint",
+            "Organization:partof"
           ],
           "type": "Consent",
           "profile": "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-consent",
-          "documentation": "Consent requests and approved consents for PCM services. Supports _include=Consent:actor and _include:iterate=Organization:endpoint|Organization:partof on consent searches."
-        },
-        {
-          "interaction": [
-            {
-              "code": "read"
-            },
-            {
-              "code": "search-type"
-            },
-            {
-              "code": "create"
-            }
-          ],
-          "searchParam": [
-            {
-              "name": "_id",
-              "type": "token",
-              "documentation": "Search by logical id."
-            }
-          ],
-          "type": "VerificationResult",
-          "profile": "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-verificationresult-service-approval",
-          "documentation": "Approvals by data source parent organizations targeting service instances."
+          "documentation": "Consent requests and lifecycle updates for PCM services. Hosted/returned resources conform to PCMConsent. Create uses the documented submit payload shape; the submit profile is illustrative only and is not sent in meta.profile. Supports _include=Consent:actor and _include:iterate=Organization:endpoint|Organization:partof on consent searches."
         }
       ],
       "mode": "server",
-      "documentation": "PCM server supports only the interactions described in the process flow."
+      "documentation": "PCM server supports only the interactions described in the process flow. HEAD is supported on resource read URLs for existence checks. Transaction Bundle interactions are not declared by this CapabilityStatement."
     }
   ],
   "name": "PcmCapabilityStatement",

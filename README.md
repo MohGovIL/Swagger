@@ -4,6 +4,7 @@ This repository hosts the OpenAPI definitions and generated documentation for th
 
 ## API Docs
 * **📘 PCM API Docs (Redoc HTML)**: [https://MohGovIL.github.io/Swagger/docs/api-docs.html](https://MohGovIL.github.io/Swagger/docs/api-docs.html)
+* **Additional documentation, FHIR profiles, and implementation guides**: [PCM on Simplifier](https://simplifier.net/pcm-il)
 
 ## OpenAPI Specs
 * `docs/openapi-fhir.yaml`: FHIR REST OpenAPI spec.

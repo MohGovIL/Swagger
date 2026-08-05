@@ -1,27 +1,27 @@
 {
   "resourceType": "HealthcareService",
-  "id": "svc-catalog-cross-org-summary-submit",
+  "id": "svc-instance-hosp-a-new-service-pending",
   "meta": {
     "profile": [
-      "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-healthcareservice-canonical"
+      "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-healthcareservice-instance"
     ],
     "tag": [
       {
         "system": "http://pcm.fhir.health.gov.il/cs/pcm-meta-tag",
-        "code": "catalog",
-        "display": "Catalog"
+        "code": "instance",
+        "display": "Instance"
       }
     ]
   },
   "text": {
     "status": "generated",
-    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>PCM admin creates the canonical Cross-Org Patient Summary service definition. It defines access mode, duration, and information buckets.</p><p>FHIR REST: <code>POST https://pcm.fhir.health.gov.il/r4/HealthcareService</code></p></div>"
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Pending service instance returned after Hospital A submits a full new-service registration request. PCM also creates a pending canonical catalog entry; both become active after the objection/review period unless MoH blocks or rejects the request.</p><p>FHIR REST: <code>GET https://pcm.fhir.health.gov.il/r4/HealthcareService/{instance-id}</code></p></div>"
   },
   "identifier": [
     {
       "use": "official",
-      "system": "http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-catalog-id",
-      "value": "PCM-CAT-0101"
+      "system": "http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id",
+      "value": "PCM-HS-INST-0201"
     }
   ],
   "category": [
@@ -49,6 +49,19 @@
   ],
   "extension": [
     {
+      "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-based-on-canonical-healthcareservice",
+      "valueReference": {
+        "reference": "HealthcareService/svc-catalog-new-service-pending"
+      }
+    },
+    {
+      "valuePeriod": {
+        "start": "2026-01-01T00:00:00+02:00",
+        "end": "2026-01-31T00:00:00+02:00"
+      },
+      "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-approval-window"
+    },
+    {
       "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-access-mode",
       "valueCode": "continuous"
     },
@@ -70,7 +83,7 @@
       "valueString": "GET [FHIR BASE]/MedicationRequest?_lastUpdated=ge{{period.start}}"
     },
     {
-      "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-allow-patient-basket-change",
+      "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-allow-patient-bucket-change",
       "valueBoolean": true
     },
     {
@@ -127,6 +140,9 @@
     }
   ],
   "active": false,
-  "name": "Cross-Organization Patient Summary",
-  "extraDetails": "A standardized summary used for cross-organization care coordination and treatment continuity."
+  "providedBy": {
+    "reference": "Organization/org-sp-hospital-a"
+  },
+  "name": "Hospital A - Patient App / Cross-Organization Patient Summary",
+  "extraDetails": "Lets Hospital A view your recent laboratory results and medication information to understand current treatment, avoid duplicate tests, and reduce medication-safety risks."
 }

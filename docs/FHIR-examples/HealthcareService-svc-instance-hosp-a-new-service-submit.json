@@ -1,29 +1,19 @@
 {
   "resourceType": "HealthcareService",
-  "id": "svc-catalog-cross-org-summary",
+  "id": "svc-instance-hosp-a-new-service-submit",
   "meta": {
-    "profile": [
-      "http://pcm.fhir.health.gov.il/StructureDefinition/pcm-healthcareservice-canonical"
-    ],
     "tag": [
       {
         "system": "http://pcm.fhir.health.gov.il/cs/pcm-meta-tag",
-        "code": "catalog",
-        "display": "Catalog"
+        "code": "instance",
+        "display": "Instance"
       }
     ]
   },
   "text": {
     "status": "generated",
-    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Active canonical service definition for cross-organization summaries. PCM uses it to derive consent period and access mode.</p><p>FHIR REST: <code>GET https://pcm.fhir.health.gov.il/r4/HealthcareService/{catalog-id}</code></p></div>"
+    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Hospital A submits a full new-service registration request after checking the active catalog and finding no matching service. PCM creates the catalog service and Hospital A registration in Pending status; objections and exception handling are managed offline by MoH.</p><p>FHIR REST: <code>POST https://pcm.fhir.health.gov.il/r4/HealthcareService</code></p></div>"
   },
-  "identifier": [
-    {
-      "use": "official",
-      "system": "http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-catalog-id",
-      "value": "PCM-CAT-0101"
-    }
-  ],
   "category": [
     {
       "coding": [
@@ -54,8 +44,8 @@
     },
     {
       "valueDuration": {
-        "system": "http://unitsofmeasure.org",
         "value": 6,
+        "system": "http://unitsofmeasure.org",
         "code": "mo",
         "unit": "months"
       },
@@ -89,8 +79,8 @@
         },
         {
           "valueDuration": {
-            "system": "http://unitsofmeasure.org",
             "value": 2,
+            "system": "http://unitsofmeasure.org",
             "code": "a",
             "unit": "years"
           },
@@ -115,8 +105,8 @@
         },
         {
           "valueDuration": {
-            "system": "http://unitsofmeasure.org",
             "value": 1,
+            "system": "http://unitsofmeasure.org",
             "code": "a",
             "unit": "years"
           },
@@ -126,7 +116,6 @@
       "url": "http://pcm.fhir.health.gov.il/StructureDefinition/ext-information-bucket"
     }
   ],
-  "active": true,
   "name": "Cross-Organization Patient Summary",
   "extraDetails": "Lets a care team view recent laboratory results and medication information to understand current treatment, avoid duplicate tests, and reduce medication-safety risks."
 }
