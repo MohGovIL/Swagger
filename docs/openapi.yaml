@@ -1,15 +1,18 @@
 openapi: 3.1.0
 info:
   title: PCM API (FHIR + OAuth2)
-  version: "0.3.2"
+  version: "0.3.4"
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   description: |
     Combined OpenAPI entry point that references the FHIR and OAuth2 specifications.
-    The production PCM OAuth origin is `https://pcm2m.health.gov.il`, and the
-    production PCM FHIR base is `https://pcm2m.health.gov.il/r4`; non-production
-    deployments use their assigned environment values. Participant hosts under
+    The production PCM FHIR and OAuth2 base is
+    `https://pcm2m.health.gov.il/api/fhir-service/r4`; the test base is
+    `https://pcm2mtest.health.gov.il/api/fhir-service/r4`. Both protocols share
+    the selected environment base, including referenced Path Items. Access-token
+    lifetime is 30 seconds in production and 86400 seconds in test; clients use
+    returned expires_in and exp values. Participant hosts under
     `example.org` are placeholders. Canonical, identifier-system, and other named
     protocol URIs remain the published identifiers. Every PCM HTTP endpoint
     requires mTLS, including discovery, metadata, authorization, token,
@@ -25,10 +28,10 @@ info:
     `_include:iterate` can add only related resources that the caller is authorized
     to read under the same resource-visibility rules; they never widen access.
 servers:
-  - url: https://pcm2m.health.gov.il/r4
-    description: Production PCM FHIR base URL; use the assigned base outside production. Every endpoint requires mTLS.
-  - url: https://pcm2m.health.gov.il
-    description: Production PCM OAuth2 origin; use the assigned origin outside production. Every endpoint requires mTLS.
+  - url: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+    description: Test PCM FHIR and OAuth2 base. Every endpoint requires mTLS.
+  - url: https://pcm2m.health.gov.il/api/fhir-service/r4
+    description: Production PCM FHIR and OAuth2 base. Every endpoint requires mTLS.
 
 tags:
   - name: Organization

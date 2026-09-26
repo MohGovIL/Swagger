@@ -1,4 +1,19 @@
-# PCM Swagger/OpenAPI Implementer Changelog: `2026-01-05` Contract to `0.3.2`
+# PCM Swagger/OpenAPI Implementer Changelog: 0.3.4
+
+Release 0.3.4 aligns the combined entry point, FHIR IG version, CapabilityStatement, discovery metadata, examples, and implementation guides. Production FHIR and OAuth2 now share `https://pcm2m.health.gov.il/api/fhir-service/r4`; test uses `https://pcm2mtest.health.gov.il/api/fhir-service/r4`. Every endpoint still requires mTLS. Runtime URLs change; canonical, identifier, policy, and terminology URIs do not.
+
+- The combined Swagger selects the same production/test bases as both split files, including externally referenced paths.
+- Access tokens remain opaque Bearer tokens without refresh tokens. Production lifetime is 30 seconds; test lifetime is 86400 seconds. Clients read `expires_in` and cache active introspection only until returned `exp`. Authorization-code and client-assertion lifetimes are unchanged.
+- Data Source access-token responses now form an explicit production/test pair with `scope: patient/Observation.rs`, corresponding to the `dataSourceAccess` and `dataSourceAccessTest` requests. JWT claims and audiences match each environment. The B2B Consent-reference schema accepts the new `/api/fhir-service/r4/Consent/{id}` path, so decoded assertions validate as well as their enclosing form requests.
+- OAuth discovery remains ES256-only and has no public JWKS metadata. Environment-specific authorization audiences, issuers, and token/introspection resources are consistent.
+- Organization search examples respect their type filter. Endpoint search examples do not invent mandatory filters. Data Source updates use the actual owned Endpoint id, distinct from the Organization id.
+- Contact documentation describes full collection replacement, valid optional element ids, and both HL7 and PCM purpose codes. Rich name/address examples and schema fields are preserved.
+- HealthcareService instance examples inherit the catalog's exact service purpose. Terminology displays, thumbprints, string identifiers, and production example labels are corrected.
+- Consent submit and deactivate still require exactly one fixed legal policy with authority `https://www.gov.il/` and URI `https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024`; `policyRule` remains prohibited.
+
+## Historical 0.3.2 migration
+
+### `2026-01-05` contract to `0.3.2`
 
 ## Purpose and scope
 
@@ -2118,52 +2133,3 @@ Implementers should not infer support for:
 - [ ] Consent fixed policy, business status, patient validation, and owner-only deactivation are migrated.
 - [ ] Three moved coding-system URIs are updated.
 - [ ] Positive, negative, lifecycle, duplicate, authorization, and retry-recovery tests pass before cutover.
-
----
-
-## Historical MoH-Swagger repository entries (superseded)
-
-The entries below are retained as a backward-reference record of earlier repository snapshots. They describe the pre-`0.3.2` contract and are not current implementation requirements. Where they conflict with the `0.3.2` changelog above or the published OpenAPI YAML files, the current OpenAPI YAML files are authoritative.
-
-### [Unreleased] - 2026-05-31 (superseded snapshot)
-
-#### Added
-
-- Added OAuth authorization server metadata discovery, including advertised token/introspection endpoints, supported `private_key_jwt` authentication methods, supported assertion signing algorithms, and JWKS location.
-- Added a JWKS discovery endpoint for PCM issuer public keys.
-- Added `private_key_jwt` client authentication support for `/introspect`, in addition to bearer-token caller authentication.
-- Added explicit RFC 8707 resource-indicator behavior for token issuance, including one access token per resource server and `invalid_target` for requests with multiple resource targets.
-- Added HealthcareService flows for registering against an existing catalog service and requesting a new service when no suitable catalog entry exists.
-- Added pending catalog and pending provider-instance examples for new-service registration responses.
-- Added OperationOutcome examples for catalog update requests that are accepted for asynchronous processing or rejected because they require a new-service registration.
-- Added documented HEAD checks for resource existence across the supported FHIR resources.
-- Added `patient:identifier` as a documented Consent search parameter.
-
-#### Changed
-
-- Clarified that mTLS is a transport-level requirement while OAuth2 client authentication uses `private_key_jwt`; mTLS certificate evidence may be linked through `cnf` policy but is not advertised as the OAuth client authentication method.
-- Updated token and introspection examples to use ES384-style client assertions and to distinguish PCM management tokens from data-source access tokens.
-- Clarified introspection response semantics, including HealthcareService instance context, data-source audience values, and certificate confirmation evidence.
-- Reframed service governance around HealthcareService lifecycle state and OperationOutcome responses instead of public approval resources.
-- Clarified HealthcareService search visibility for active and inactive catalog/instance services, including authorization limits for inactive records.
-- Reworked HealthcareService creation so providers either submit a minimal instance registration with `basedOn` for an existing catalog service, or submit a full new-service request that creates pending catalog and instance resources.
-- Clarified that external clients do not directly create immediately active canonical catalog services; activation and review happen outside the public FHIR operation.
-- Clarified HealthcareService update behavior for instance deactivation, reactivation requests, asynchronous catalog updates, and material catalog changes that must go through the new-service flow.
-- Clarified Consent creation rules so consent requests must reference an existing active HealthcareService instance, not a catalog service or inactive instance, and token issuance repeats the service-state check.
-- Updated submit examples to show server-accepted request payloads without client-supplied `meta.profile` where profiles are illustrative rather than sent on the wire.
-- Normalized the patient bucket-change extension URL to `ext-allow-patient-bucket-change`.
-- Refreshed the CapabilityStatement, FHIR examples, and generated Redocly documentation to match the current public API behavior.
-
-#### Removed
-
-- Removed public VerificationResult approval endpoints and examples.
-
-### [Unreleased] - 2026-01-28 (superseded snapshot)
-
-#### Added
-
-- Split OpenAPI specs into `openapi-fhir.yaml` and `openapi-oauth.yaml`, with a combined `openapi.yaml`.
-
-#### Changed
-
-- OpenAPI documentation refreshed.
