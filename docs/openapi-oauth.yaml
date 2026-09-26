@@ -1,51 +1,73 @@
 openapi: 3.1.0
 info:
   title: PCM OAuth2 API
-  version: "0.3.2"
+  version: 0.3.4
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
-  description: |
-    OpenAPI definition for the PCM OAuth2 endpoints (token issuance and introspection).
-    The production PCM OAuth origin is `https://pcm2m.health.gov.il`; non-production
-    deployments use their assigned environment origin. Participant hosts under
+  description: 'OpenAPI definition for the PCM OAuth2 endpoints (token issuance and introspection).
+
+    The production PCM OAuth base is `https://pcm2m.health.gov.il/api/fhir-service/r4`
+
+    and the test base is `https://pcm2mtest.health.gov.il/api/fhir-service/r4`; other
+
+    deployments use their assigned environment base. Participant hosts under
+
     `example.org` are placeholders. Exact-match requirements apply to the applicable
+
     runtime values. Canonical, identifier-system, and other named protocol URIs
+
     remain the published identifiers.
+
     PCM requires mTLS on every HTTP endpoint, including OAuth/SMART discovery,
+
     authorization, token, and introspection. The client certificate is not
+
     the OAuth2 client authentication method. OAuth2 client authentication uses
+
     `private_key_jwt` using `ES256`, the only assertion-signing algorithm
+
     accepted by PCM. Initial Data Source-only fallback onboarding registers one
+
     organization certificate and one Data Source client ID. Later manual Service
+
     Provider enablement may add role/application-specific certificates and client
+
     IDs; the calling client uses its assigned credential set. FHIR API access uses
+
     normal OAuth2 bearer tokens; PCM does not advertise RFC 8705
+
     certificate-bound access tokens. MoH/PCM exclusively controls participant
+
     Organization.active. A Data Source controls runtime technical availability
+
     through the status of its currently referenced participant Endpoint.
+
+    '
 servers:
-  - url: https://pcm2m.health.gov.il
-    description: Production PCM OAuth2 origin; use the assigned origin for a non-production environment. Every endpoint requires mTLS.
-
+- url: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+  description: Test PCM OAuth2 origin. Every endpoint requires mTLS.
+- url: https://pcm2m.health.gov.il/api/fhir-service/r4
+  description: Production PCM OAuth2 origin. Every endpoint requires mTLS.
 tags:
-  - name: OAuth2
-    description: Token issuance and introspection.
-
+- name: OAuth2
+  description: Token issuance and introspection.
 paths:
   /.well-known/oauth-authorization-server:
-    servers:
-      - url: https://pcm2m.health.gov.il
     get:
-      tags: [OAuth2]
+      tags:
+      - OAuth2
       operationId: getOAuthAuthorizationServerMetadata
       summary: OAuth2 authorization server metadata
-      description: |
-        Returns OAuth2 authorization server metadata for the PCM issuer, including
+      description: 'Returns OAuth2 authorization server metadata for the PCM issuer, including
+
         authorization, token, and introspection endpoint locations. The metadata
+
         request itself requires mTLS.
+
+        '
       security:
-        - mtlsTransport: []
+      - mtlsTransport: []
       responses:
         '200':
           description: OAuth2 authorization server metadata
@@ -54,118 +76,170 @@ paths:
               schema:
                 $ref: '#/components/schemas/OAuthAuthorizationServerMetadata'
               examples:
-                metadata:
+                metadataProduction:
+                  summary: Authorization-server metadata — production
                   value:
-                    issuer: https://pcm2m.health.gov.il
-                    authorization_endpoint: https://pcm2m.health.gov.il/authorize
-                    token_endpoint: https://pcm2m.health.gov.il/token
-                    introspection_endpoint: https://pcm2m.health.gov.il/introspect
+                    issuer: https://pcm2m.health.gov.il/api/fhir-service/r4
+                    authorization_endpoint: https://pcm2m.health.gov.il/api/fhir-service/r4/authorize
+                    token_endpoint: https://pcm2m.health.gov.il/api/fhir-service/r4/token
+                    introspection_endpoint: https://pcm2m.health.gov.il/api/fhir-service/r4/introspect
                     grant_types_supported:
-                      - authorization_code
-                      - client_credentials
+                    - client_credentials
+                    - authorization_code
                     response_types_supported:
-                      - code
+                    - code
+                    response_modes_supported:
+                    - query
                     code_challenge_methods_supported:
-                      - S256
+                    - S256
                     token_endpoint_auth_methods_supported:
-                      - private_key_jwt
+                    - private_key_jwt
                     token_endpoint_auth_signing_alg_values_supported:
-                      - ES256
+                    - ES256
                     introspection_endpoint_auth_methods_supported:
-                      - private_key_jwt
+                    - private_key_jwt
                     introspection_endpoint_auth_signing_alg_values_supported:
-                      - ES256
+                    - ES256
+                    tls_client_certificate_bound_access_tokens: false
+                metadataTest:
+                  summary: Authorization-server metadata — test
+                  value:
+                    issuer: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+                    authorization_endpoint: https://pcm2mtest.health.gov.il/api/fhir-service/r4/authorize
+                    token_endpoint: https://pcm2mtest.health.gov.il/api/fhir-service/r4/token
+                    introspection_endpoint: https://pcm2mtest.health.gov.il/api/fhir-service/r4/introspect
+                    grant_types_supported:
+                    - client_credentials
+                    - authorization_code
+                    response_types_supported:
+                    - code
+                    response_modes_supported:
+                    - query
+                    code_challenge_methods_supported:
+                    - S256
+                    token_endpoint_auth_methods_supported:
+                    - private_key_jwt
+                    token_endpoint_auth_signing_alg_values_supported:
+                    - ES256
+                    introspection_endpoint_auth_methods_supported:
+                    - private_key_jwt
+                    introspection_endpoint_auth_signing_alg_values_supported:
+                    - ES256
                     tls_client_certificate_bound_access_tokens: false
         '400':
           $ref: '#/components/responses/OAuthError'
   /authorize:
-    servers:
-      - url: https://pcm2m.health.gov.il
     get:
-      tags: [OAuth2]
+      tags:
+      - OAuth2
       operationId: authorizeSmartApplication
       summary: Start standalone SMART authorization
-      description: |
-        Starts the standalone SMART authorization-code flow. The client uses its
+      description: 'Starts the standalone SMART authorization-code flow. The client uses its
+
         assigned Service Provider application `client_id`, exact registered
+
         redirect URI, PKCE S256, and the exact PCM FHIR base as `aud`. The client
+
         requests the standard SMART App Launch v2 patient-level resource scopes
+
         needed by the application as one space-delimited `scope` value. PCM does
+
         not support `user/...` app-launch scopes and may grant a different or
+
         narrower scope set. The subsequent client-facing token response reports the
+
         app-launch grant, while the authoritative service-derived permissions
-        presented to a Data Source are returned in that Data Source's active
+
+        presented to a Data Source are returned in that Data Source''s active
+
         introspection response. A client assertion is not sent to this endpoint;
+
         asymmetric client authentication occurs during the code exchange. The
+
         authorization request itself still requires transport-level mTLS.
+
+        '
       security:
-        - mtlsTransport: []
+      - mtlsTransport: []
       parameters:
-        - name: response_type
-          in: query
-          required: true
-          schema:
-            type: string
-            const: code
-        - name: client_id
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Opaque PCM-assigned OAuth client identifier for the Service Provider application.
-        - name: redirect_uri
-          in: query
-          required: true
-          schema:
-            type: string
-            format: uri
-          description: Exact registered standalone SMART redirect URI.
-        - name: scope
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 1
-            pattern: '^(?!user/)(?!.* user/)(?!.*(?:\?|&)_filter(?:=|&|$))\S+(?: \S+)*$'
-            example: patient/*.rs
-          description: |
-            Space-delimited SMART App Launch v2 patient-level resource-scope
-            string. PCM accepts standard `patient/...` SMART v2 syntax and does
-            not support `user/...` app-launch scopes. Query-constrained FHIR
-            resource scopes may use search modifiers, chaining, and reverse
-            chaining, including the experimental syntax described by SMART;
-            `_filter` is not supported. URL-encode the complete parameter value so
-            `&` characters inside a scope constraint are not parsed as separate
-            authorization-request parameters. The requested scopes remain subject
-            to client, user, service-definition, and PCM authorization policy.
-        - name: state
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 1
-          description: Unpredictable client-generated value validated after redirect.
-        - name: code_challenge
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 43
-            maxLength: 128
-        - name: code_challenge_method
-          in: query
-          required: true
-          schema:
-            type: string
-            const: S256
-        - name: aud
-          in: query
-          required: true
-          schema:
-            type: string
-            format: uri
-            const: https://pcm2m.health.gov.il/r4
-          description: Exact PCM FHIR REST API base.
+      - name: response_type
+        in: query
+        required: true
+        schema:
+          type: string
+          const: code
+      - name: client_id
+        in: query
+        required: true
+        schema:
+          type: string
+        description: Opaque PCM-assigned OAuth client identifier for the Service Provider application.
+      - name: redirect_uri
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uri
+        description: Exact registered standalone SMART redirect URI.
+      - name: scope
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          pattern: '^(?!user/)(?!.* user/)(?!.*(?:\?|&)_filter(?:=|&|$))\S+(?: \S+)*$'
+          example: patient/*.rs
+        description: 'Space-delimited SMART App Launch v2 patient-level resource-scope
+
+          string. PCM accepts standard `patient/...` SMART v2 syntax and does
+
+          not support `user/...` app-launch scopes. Query-constrained FHIR
+
+          resource scopes may use search modifiers, chaining, and reverse
+
+          chaining, including the experimental syntax described by SMART;
+
+          `_filter` is not supported. URL-encode the complete parameter value so
+
+          `&` characters inside a scope constraint are not parsed as separate
+
+          authorization-request parameters. The requested scopes remain subject
+
+          to client, user, service-definition, and PCM authorization policy.
+
+          '
+      - name: state
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+        description: Unpredictable client-generated value validated after redirect.
+      - name: code_challenge
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 43
+          maxLength: 128
+      - name: code_challenge_method
+        in: query
+        required: true
+        schema:
+          type: string
+          const: S256
+      - name: aud
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uri
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4
+          - https://pcm2m.health.gov.il/api/fhir-service/r4
+        description: Exact PCM FHIR REST API base for the environment being called. A request to
+          the test authorization endpoint must carry the test base; a request to production must
+          carry the production base. Never mix the two within one flow.
       responses:
         '200':
           description: Interactive authorization or consent page when user interaction is required.
@@ -174,10 +248,13 @@ paths:
               schema:
                 type: string
         '302':
-          description: |
-            Redirect to the exact registered `redirect_uri` with `code` and the
+          description: 'Redirect to the exact registered `redirect_uri` with `code` and the
+
             original `state`, or with an OAuth `error` and `state`. PCM does not
+
             redirect to an unregistered or mismatched URI.
+
+            '
           headers:
             Location:
               description: Registered redirect URI carrying the authorization response.
@@ -187,63 +264,103 @@ paths:
               examples:
                 success:
                   summary: Successful authorization response
-                  value: "https://app.hospital-a.example.org/pcm/oauth2/callback?code=pcm-auth-code-7f3a9c&state=pcm-state-4e8b2d"
+                  value: https://app.hospital-a.example.org/pcm/oauth2/callback?code=pcm-auth-code-7f3a9c&state=pcm-state-4e8b2d
                 error:
                   summary: Authorization error response
-                  value: "https://app.hospital-a.example.org/pcm/oauth2/callback?error=access_denied&state=pcm-state-4e8b2d"
+                  value: https://app.hospital-a.example.org/pcm/oauth2/callback?error=access_denied&state=pcm-state-4e8b2d
         '400':
           $ref: '#/components/responses/OAuthError'
   /token:
-    servers:
-      - url: https://pcm2m.health.gov.il
     post:
-      tags: [OAuth2]
+      tags:
+      - OAuth2
       operationId: issueAccessToken
       summary: Issue access token
-      description: |
-        Issues an opaque access token using either the standalone SMART
+      description: 'Issues an opaque access token using either the standalone SMART
+
         authorization-code exchange or a supported client-credentials token class.
+
         The endpoint requires mTLS as a transport-level policy, while OAuth2
+
         client authentication is performed with `private_key_jwt`.
+
         Each request uses a fresh assertion signed with a certificate registered
+
         out of band for the opaque `client_id`. The assertion audience is this
+
         exact token endpoint. When one certificate is registered for the calling
+
         role/application, it is used for transport mTLS and assertion signing. If
+
         PCM registered different certificates for that client, the assertion SHOULD include
+
         `cnf.x5t#S256` identifying the certificate actually presented on this
+
         mTLS connection; PCM validates a supplied value against the connection.
+
         For data source access, the client_assertion MUST include the HL7 B2B
+
         authorization extension object as profiled by PCM, including version,
+
         requester organization identity, purpose of use, consent policy, and an
+
         absolute Consent reference. PCM uses the B2B object syntax without claiming
+
         the full UDAP token-request profile.
+
         PCM issues tokens only for role/application clients mapped to operationally
+
         active Organizations. For child Organization identities, this requires the child to be `active=true`,
+
         the parent to be active, and all externally documented role/state
+
         preconditions to permit use.
+
         For data source access, PCM also rechecks the target Data Source Organization
+
         and parent, its currently referenced participant Endpoint, the referenced
-        Consent, the HealthcareService instance, and the instance's canonical catalog
+
+        Consent, the HealthcareService instance, and the instance''s canonical catalog
+
         before issuing the token. Data Source-access and presence tokens are issued
-        only when that referenced Endpoint is `active` and the request's exact
+
+        only when that referenced Endpoint is `active` and the request''s exact
+
         `resource` equals its current `Endpoint.address`; `suspended` and `off`
+
         Endpoints are ineligible and an old/replaced address is no longer an audience.
+
         Token issuance is
+
         allowed only when the relevant Organizations are operationally active, the
+
         Consent is active, and both the instance and catalog are
+
         `businessStatus=active` and `active=true`.
+
         Endpoint status does not gate PCM-management token issuance: an otherwise
+
         authorized Data Source retains management access while its Endpoint is
+
         suspended or off so it can resume or replace it.
+
         PCM issues each access token for exactly one resource server. The token
+
         request MUST contain exactly one RFC 8707 `resource` parameter; requests
+
         containing more than one `resource` parameter fail with `invalid_target`.
+
         Clients request one token per resource server.
+
         PCM-management and introspection-authentication bearer requests use
+
         `scope=system/*.crus`. Data Source-access and presence requests use their
+
         separately derived scopes and never use that management scope.
+
+        '
       security:
-        - mtlsTransport: []
+      - mtlsTransport: []
       requestBody:
         required: true
         content:
@@ -253,13 +370,19 @@ paths:
             examples:
               authorizationCode:
                 summary: Standalone SMART authorization-code exchange
-                description: |
-                  The client assertion is newly generated for this exchange and
+                description: 'The client assertion is newly generated for this exchange and
+
                   has `iss=sub=pcm-client-hospital-a`, `aud` equal to the exact
+
                   PCM token endpoint, a unique `jti`, and a short expiry. The
+
                   compact value uses the required `ES256` header; its
+
                   `ExampleSignature` segment is illustrative rather than a
+
                   cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -267,7 +390,7 @@ paths:
                   claims:
                     iss: pcm-client-hospital-a
                     sub: pcm-client-hospital-a
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
                     iat: 1706640000
                     exp: 1706640300
                     jti: auth-code-exchange-0001
@@ -277,16 +400,22 @@ paths:
                   redirect_uri: https://app.hospital-a.example.org/pcm/oauth2/callback
                   code_verifier: 8Zp7n4mTQ2xV6cK9rB3wF5sL1yH0dJ4uN7aE6gC2iP8
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvdG9rZW4iLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMCwianRpIjoiYXV0aC1jb2RlLWV4Y2hhbmdlLTAwMDEifQ.ExampleSignature
-              clientCredentials:
-                summary: PCM access token request (RFC 8707 + private_key_jwt)
-                description: |
-                  The decoded assertion has `iss=sub=pcm-client-hospital-a`,
-                  `aud=https://pcm2m.health.gov.il/token`, a unique `jti`,
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC90b2tlbiIsImp0aSI6ImF1dGgtY29kZS1leGNoYW5nZS0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.ExampleSignature
+              clientCredentials-test:
+                summary: PCM access token request (RFC 8707 + private_key_jwt) — test environment
+                description: 'The decoded assertion has `iss=sub=pcm-client-hospital-a`,
+
+                  `aud=https://pcm2mtest.health.gov.il/api/fhir-service/r4/token`, a unique `jti`,
+
                   and no patient, Consent, service, or B2B authorization context.
+
                   The compact value uses the required `ES256` header; its
+
                   `ExampleSignature` segment is illustrative rather than a
+
                   cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -294,26 +423,65 @@ paths:
                   claims:
                     iss: pcm-client-hospital-a
                     sub: pcm-client-hospital-a
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2mtest.health.gov.il/api/fhir-service/r4/token
                     iat: 1706640000
                     exp: 1706640300
                     jti: management-request-0001
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvdG9rZW4iLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMCwianRpIjoibWFuYWdlbWVudC1yZXF1ZXN0LTAwMDEifQ.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtdGVzdC5oZWFsdGguZ292LmlsL2FwaS9maGlyLXNlcnZpY2UvcjQvdG9rZW4iLCJqdGkiOiJtYW5hZ2VtZW50LXJlcXVlc3QtMDAwMSIsImlhdCI6MTcwNjY0MDAwMCwiZXhwIjoxNzA2NjQwMzAwfQ.ExampleSignature
                   scope: system/*.crus
-                  resource: https://pcm2m.health.gov.il/r4
-              introspectionAuthentication:
-                summary: Data Source introspection-authentication bearer request
-                description: |
-                  This assertion has the token endpoint as its audience. The
+                  resource: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+              clientCredentials:
+                summary: PCM access token request (RFC 8707 + private_key_jwt)
+                description: 'The decoded assertion has `iss=sub=pcm-client-hospital-a`,
+
+                  `aud=https://pcm2m.health.gov.il/api/fhir-service/r4/token`, a unique `jti`,
+
+                  and no patient, Consent, service, or B2B authorization context.
+
+                  The compact value uses the required `ES256` header; its
+
+                  `ExampleSignature` segment is illustrative rather than a
+
+                  cryptographic test vector.
+
+                  '
+                x-decoded-client-assertion:
+                  header:
+                    alg: ES256
+                    typ: JWT
+                  claims:
+                    iss: pcm-client-hospital-a
+                    sub: pcm-client-hospital-a
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
+                    iat: 1706640000
+                    exp: 1706640300
+                    jti: management-request-0001
+                value:
+                  grant_type: client_credentials
+                  client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC90b2tlbiIsImp0aSI6Im1hbmFnZW1lbnQtcmVxdWVzdC0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.ExampleSignature
+                  scope: system/*.crus
+                  resource: https://pcm2m.health.gov.il/api/fhir-service/r4
+              introspectionAuthentication-test:
+                summary: Data Source introspection-authentication bearer request — test environment
+                description: 'This assertion has the token endpoint as its audience. The
+
                   resulting opaque token has the exact PCM introspection
+
                   endpoint as its sole audience and contains no patient,
+
                   Consent, service, B2B, or
+
                   launch context. The compact value uses the required `ES256`
+
                   header; its `ExampleSignature` segment is illustrative rather
+
                   than a cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -321,33 +489,81 @@ paths:
                   claims:
                     iss: pcm-client-hmo-b
                     sub: pcm-client-hmo-b
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2mtest.health.gov.il/api/fhir-service/r4/token
                     jti: introspection-bearer-0001
                     iat: 1706640000
                     exp: 1706640300
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhtby1iIiwic3ViIjoicGNtLWNsaWVudC1obW8tYiIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC90b2tlbiIsImp0aSI6ImludHJvc3BlY3Rpb24tYmVhcmVyLTAwMDEiLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMH0.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhtby1iIiwic3ViIjoicGNtLWNsaWVudC1obW8tYiIsImF1ZCI6Imh0dHBzOi8vcGNtMm10ZXN0LmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC90b2tlbiIsImp0aSI6ImludHJvc3BlY3Rpb24tYmVhcmVyLTAwMDEiLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMH0.ExampleSignature
                   scope: system/*.crus
-                  resource: https://pcm2m.health.gov.il/introspect
+                  resource: https://pcm2mtest.health.gov.il/api/fhir-service/r4/introspect
+              introspectionAuthentication:
+                summary: Data Source introspection-authentication bearer request
+                description: 'This assertion has the token endpoint as its audience. The
+
+                  resulting opaque token has the exact PCM introspection
+
+                  endpoint as its sole audience and contains no patient,
+
+                  Consent, service, B2B, or
+
+                  launch context. The compact value uses the required `ES256`
+
+                  header; its `ExampleSignature` segment is illustrative rather
+
+                  than a cryptographic test vector.
+
+                  '
+                x-decoded-client-assertion:
+                  header:
+                    alg: ES256
+                    typ: JWT
+                  claims:
+                    iss: pcm-client-hmo-b
+                    sub: pcm-client-hmo-b
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
+                    jti: introspection-bearer-0001
+                    iat: 1706640000
+                    exp: 1706640300
+                value:
+                  grant_type: client_credentials
+                  client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhtby1iIiwic3ViIjoicGNtLWNsaWVudC1obW8tYiIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L3Rva2VuIiwianRpIjoiaW50cm9zcGVjdGlvbi1iZWFyZXItMDAwMSIsImlhdCI6MTcwNjY0MDAwMCwiZXhwIjoxNzA2NjQwMzAwfQ.ExampleSignature
+                  scope: system/*.crus
+                  resource: https://pcm2m.health.gov.il/api/fhir-service/r4/introspect
               dataSourceAccess:
                 summary: Data source access token request (HL7 B2B extension + RFC 8707)
-                description: |
-                  The decoded assertion uses the opaque Service Provider client ID
+                description: 'The decoded assertion uses the opaque Service Provider client ID
+
                   in `iss` and `sub`, the exact PCM token endpoint in `aud`, and
+
                   includes `extensions.hl7-b2b` with `version="1"`, requester
+
                   `organization_id=http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001`,
+
                   purpose `http://terminology.hl7.org/CodeSystem/v3-ActReason#TREAT`,
+
                   a `consent_policy` array containing
+
                   `https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024`,
+
                   and the absolute Consent URL shown by the scenario. This example
+
                   uses different registered mTLS and assertion-signing
+
                   certificates, so `cnf.x5t#S256` identifies the mTLS certificate.
+
                   This assertion claim correlates the two client credentials; it
+
                   does not bind the resulting Bearer access token. The compact
+
                   value uses the required `ES256` header; its `ExampleSignature`
+
                   segment is illustrative rather than a cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -355,7 +571,7 @@ paths:
                   claims:
                     iss: pcm-client-hospital-a
                     sub: pcm-client-hospital-a
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
                     iat: 1706640000
                     exp: 1706640300
                     jti: data-source-access-0001
@@ -364,25 +580,62 @@ paths:
                     extensions:
                       hl7-b2b:
                         version: '1'
-                        organization_id: "http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001"
+                        organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001
                         purpose_of_use:
-                          - http://terminology.hl7.org/CodeSystem/v3-ActReason#TREAT
+                        - http://terminology.hl7.org/CodeSystem/v3-ActReason#TREAT
                         consent_policy:
-                          - https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024
+                        - https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024
                         consent_reference:
-                          - https://pcm2m.health.gov.il/r4/Consent/consent-123
+                        - https://pcm2m.health.gov.il/api/fhir-service/r4/Consent/consent-123
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvdG9rZW4iLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMCwianRpIjoiZGF0YS1zb3VyY2UtYWNjZXNzLTAwMDEiLCJjbmYiOnsieDV0I1MyNTYiOiJlaVZGdUtzX1pzcFhDNk1ZTFdMelRoZ0QxeWo1VTZDZ3NfNEpTUUVCeF9jIn0sImV4dGVuc2lvbnMiOnsiaGw3LWIyYiI6eyJ2ZXJzaW9uIjoiMSIsIm9yZ2FuaXphdGlvbl9pZCI6Imh0dHA6Ly9wY20uZmhpci5oZWFsdGguZ292LmlsL2lkZW50aWZpZXIvcGNtLW9yZ2FuaXphdGlvbi1pZCNQQ00tT1JHLUhPU1AtQS1TUC0wMDEiLCJwdXJwb3NlX29mX3VzZSI6WyJodHRwOi8vdGVybWlub2xvZ3kuaGw3Lm9yZy9Db2RlU3lzdGVtL3YzLUFjdFJlYXNvbiNUUkVBVCJdLCJjb25zZW50X3BvbGljeSI6WyJodHRwczovL3BjbS5maGlyLmhlYWx0aC5nb3YuaWwvY29uc2VudC1wb2xpY3kvbWVkaWNhbC1pbmZvcm1hdGlvbi1tb2JpbGl0eS1sYXctMjAyNCJdLCJjb25zZW50X3JlZmVyZW5jZSI6WyJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvcjQvQ29uc2VudC9jb25zZW50LTEyMyJdfX19.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC90b2tlbiIsImp0aSI6ImRhdGEtc291cmNlLWFjY2Vzcy0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDAsImNuZiI6eyJ4NXQjUzI1NiI6ImVpVkZ1S3NfWnNwWEM2TVlMV0x6VGhnRDF5ajVVNkNnc180SlNRRUJ4X2MifSwiZXh0ZW5zaW9ucyI6eyJobDctYjJiIjp7InZlcnNpb24iOiIxIiwib3JnYW5pemF0aW9uX2lkIjoiaHR0cDovL3BjbS5maGlyLmhlYWx0aC5nb3YuaWwvaWRlbnRpZmllci9wY20tb3JnYW5pemF0aW9uLWlkI1BDTS1PUkctSE9TUC1BLVNQLTAwMSIsInB1cnBvc2Vfb2ZfdXNlIjpbImh0dHA6Ly90ZXJtaW5vbG9neS5obDcub3JnL0NvZGVTeXN0ZW0vdjMtQWN0UmVhc29uI1RSRUFUIl0sImNvbnNlbnRfcG9saWN5IjpbImh0dHBzOi8vcGNtLmZoaXIuaGVhbHRoLmdvdi5pbC9jb25zZW50LXBvbGljeS9tZWRpY2FsLWluZm9ybWF0aW9uLW1vYmlsaXR5LWxhdy0yMDI0Il0sImNvbnNlbnRfcmVmZXJlbmNlIjpbImh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L0NvbnNlbnQvY29uc2VudC0xMjMiXX19fQ.ExampleSignature
+                  scope: patient/Observation.rs
+                  resource: https://fhir.hmo-b.example.org/r4
+              dataSourceAccessTest:
+                summary: Data Source access token request — test environment
+                description: Test-environment counterpart of dataSourceAccess. The assertion audience and absolute Consent
+                  URL use the test PCM base. The Data Source resource remains its registered target FHIR base. The compact
+                  signature is illustrative, not a cryptographic test vector.
+                x-decoded-client-assertion:
+                  header:
+                    alg: ES256
+                    typ: JWT
+                  claims:
+                    iss: pcm-client-hospital-a
+                    sub: pcm-client-hospital-a
+                    aud: https://pcm2mtest.health.gov.il/api/fhir-service/r4/token
+                    iat: 1706640000
+                    exp: 1706640300
+                    jti: data-source-access-test-0001
+                    cnf:
+                      x5t#S256: eiVFuKs_ZspXC6MYLWLzThgD1yj5U6Cgs_4JSQEBx_c
+                    extensions:
+                      hl7-b2b:
+                        version: '1'
+                        organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001
+                        purpose_of_use:
+                        - http://terminology.hl7.org/CodeSystem/v3-ActReason#TREAT
+                        consent_policy:
+                        - https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024
+                        consent_reference:
+                        - https://pcm2mtest.health.gov.il/api/fhir-service/r4/Consent/consent-123
+                value:
+                  grant_type: client_credentials
+                  client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtdGVzdC5oZWFsdGguZ292LmlsL2FwaS9maGlyLXNlcnZpY2UvcjQvdG9rZW4iLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMCwianRpIjoiZGF0YS1zb3VyY2UtYWNjZXNzLXRlc3QtMDAwMSIsImNuZiI6eyJ4NXQjUzI1NiI6ImVpVkZ1S3NfWnNwWEM2TVlMV0x6VGhnRDF5ajVVNkNnc180SlNRRUJ4X2MifSwiZXh0ZW5zaW9ucyI6eyJobDctYjJiIjp7InZlcnNpb24iOiIxIiwib3JnYW5pemF0aW9uX2lkIjoiaHR0cDovL3BjbS5maGlyLmhlYWx0aC5nb3YuaWwvaWRlbnRpZmllci9wY20tb3JnYW5pemF0aW9uLWlkI1BDTS1PUkctSE9TUC1BLVNQLTAwMSIsInB1cnBvc2Vfb2ZfdXNlIjpbImh0dHA6Ly90ZXJtaW5vbG9neS5obDcub3JnL0NvZGVTeXN0ZW0vdjMtQWN0UmVhc29uI1RSRUFUIl0sImNvbnNlbnRfcG9saWN5IjpbImh0dHBzOi8vcGNtLmZoaXIuaGVhbHRoLmdvdi5pbC9jb25zZW50LXBvbGljeS9tZWRpY2FsLWluZm9ybWF0aW9uLW1vYmlsaXR5LWxhdy0yMDI0Il0sImNvbnNlbnRfcmVmZXJlbmNlIjpbImh0dHBzOi8vcGNtMm10ZXN0LmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC9Db25zZW50L2NvbnNlbnQtMTIzIl19fX0.ExampleSignature
                   scope: patient/Observation.rs
                   resource: https://fhir.hmo-b.example.org/r4
               onlinePresence:
                 summary: PCM online patient-presence token request
-                description: |
-                  The compact value uses the required `ES256` header; its
+                description: 'The compact value uses the required `ES256` header; its
+
                   `ExampleSignature` segment is illustrative rather than a
+
                   cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -390,27 +643,35 @@ paths:
                   claims:
                     iss: pcm-presence-orchestrator
                     sub: pcm-presence-orchestrator
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
                     jti: presence-request-0001
                     iat: 1706640000
                     exp: 1706640300
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tcHJlc2VuY2Utb3JjaGVzdHJhdG9yIiwic3ViIjoicGNtLXByZXNlbmNlLW9yY2hlc3RyYXRvciIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC90b2tlbiIsImp0aSI6InByZXNlbmNlLXJlcXVlc3QtMDAwMSIsImlhdCI6MTcwNjY0MDAwMCwiZXhwIjoxNzA2NjQwMzAwfQ.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tcHJlc2VuY2Utb3JjaGVzdHJhdG9yIiwic3ViIjoicGNtLXByZXNlbmNlLW9yY2hlc3RyYXRvciIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L3Rva2VuIiwianRpIjoicHJlc2VuY2UtcmVxdWVzdC0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.ExampleSignature
                   scope: system/Patient.s?identifier=http://fhir.health.gov.il/identifier/il-national-id|000000018
                   resource: https://fhir.hmo-b.example.org/r4
               batchPresence:
                 summary: PCM batch patient-presence token request
-                description: |
-                  The multi-patient exception remains limited to count-only Patient
+                description: 'The multi-patient exception remains limited to count-only Patient
+
                   searches at this one Data Source. The compact value uses the
+
                   required `ES256` header; its `ExampleSignature` segment is
+
                   illustrative rather than a cryptographic test vector.
+
                   Batch-presence patient-count and payload limits, whole-request
+
                   timeout/retry behavior, and the oversized-batch response are not
+
                   yet defined; PCM and rollout participants will settle them during
+
                   the initial rollout.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -418,35 +679,46 @@ paths:
                   claims:
                     iss: pcm-presence-orchestrator
                     sub: pcm-presence-orchestrator
-                    aud: https://pcm2m.health.gov.il/token
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/token
                     jti: presence-batch-request-0001
                     iat: 1706640000
                     exp: 1706640300
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tcHJlc2VuY2Utb3JjaGVzdHJhdG9yIiwic3ViIjoicGNtLXByZXNlbmNlLW9yY2hlc3RyYXRvciIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC90b2tlbiIsImp0aSI6InByZXNlbmNlLWJhdGNoLXJlcXVlc3QtMDAwMSIsImlhdCI6MTcwNjY0MDAwMCwiZXhwIjoxNzA2NjQwMzAwfQ.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tcHJlc2VuY2Utb3JjaGVzdHJhdG9yIiwic3ViIjoicGNtLXByZXNlbmNlLW9yY2hlc3RyYXRvciIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L3Rva2VuIiwianRpIjoicHJlc2VuY2UtYmF0Y2gtcmVxdWVzdC0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.ExampleSignature
                   scope: system/Patient.s?identifier=http://fhir.health.gov.il/identifier/il-national-id|000000001,http://fhir.health.gov.il/identifier/il-national-id|000000002,http://fhir.health.gov.il/identifier/il-national-id|000000003
                   resource: https://fhir.hmo-b.example.org/r4
               curlExample:
                 summary: curl example (mTLS + form-encoded)
-                description: |
-                  The compact value uses the required `ES256` header; its
+                description: 'The compact value uses the required `ES256` header; its
+
                   `ExampleSignature` segment is illustrative rather than a
+
                   cryptographic test vector.
 
+
                   curl --cert sp-client.crt --key sp-client.key --cacert rootCA.crt
-                  -X POST https://pcm2m.health.gov.il/token
+
+                  -X POST https://pcm2m.health.gov.il/api/fhir-service/r4/token
+
                   -H "Content-Type: application/x-www-form-urlencoded"
+
                   --data-urlencode "grant_type=client_credentials"
+
                   --data-urlencode "client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+
                   --data-urlencode "client_assertion=<signed-jwt>"
+
                   --data-urlencode "scope=patient/Observation.rs"
+
                   --data-urlencode "resource=https://fhir.hmo-b.example.org/r4"
+
+                  '
                 value:
                   grant_type: client_credentials
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvdG9rZW4iLCJpYXQiOjE3MDY2NDAwMDAsImV4cCI6MTcwNjY0MDMwMCwianRpIjoiZGF0YS1zb3VyY2UtYWNjZXNzLTAwMDEiLCJjbmYiOnsieDV0I1MyNTYiOiJlaVZGdUtzX1pzcFhDNk1ZTFdMelRoZ0QxeWo1VTZDZ3NfNEpTUUVCeF9jIn0sImV4dGVuc2lvbnMiOnsiaGw3LWIyYiI6eyJ2ZXJzaW9uIjoiMSIsIm9yZ2FuaXphdGlvbl9pZCI6Imh0dHA6Ly9wY20uZmhpci5oZWFsdGguZ292LmlsL2lkZW50aWZpZXIvcGNtLW9yZ2FuaXphdGlvbi1pZCNQQ00tT1JHLUhPU1AtQS1TUC0wMDEiLCJwdXJwb3NlX29mX3VzZSI6WyJodHRwOi8vdGVybWlub2xvZ3kuaGw3Lm9yZy9Db2RlU3lzdGVtL3YzLUFjdFJlYXNvbiNUUkVBVCJdLCJjb25zZW50X3BvbGljeSI6WyJodHRwczovL3BjbS5maGlyLmhlYWx0aC5nb3YuaWwvY29uc2VudC1wb2xpY3kvbWVkaWNhbC1pbmZvcm1hdGlvbi1tb2JpbGl0eS1sYXctMjAyNCJdLCJjb25zZW50X3JlZmVyZW5jZSI6WyJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvcjQvQ29uc2VudC9jb25zZW50LTEyMyJdfX19.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJzdWIiOiJwY20tY2xpZW50LWhvc3BpdGFsLWEiLCJhdWQiOiJodHRwczovL3BjbTJtLmhlYWx0aC5nb3YuaWwvYXBpL2ZoaXItc2VydmljZS9yNC90b2tlbiIsImp0aSI6ImRhdGEtc291cmNlLWFjY2Vzcy0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDAsImNuZiI6eyJ4NXQjUzI1NiI6ImVpVkZ1S3NfWnNwWEM2TVlMV0x6VGhnRDF5ajVVNkNnc180SlNRRUJ4X2MifSwiZXh0ZW5zaW9ucyI6eyJobDctYjJiIjp7InZlcnNpb24iOiIxIiwib3JnYW5pemF0aW9uX2lkIjoiaHR0cDovL3BjbS5maGlyLmhlYWx0aC5nb3YuaWwvaWRlbnRpZmllci9wY20tb3JnYW5pemF0aW9uLWlkI1BDTS1PUkctSE9TUC1BLVNQLTAwMSIsInB1cnBvc2Vfb2ZfdXNlIjpbImh0dHA6Ly90ZXJtaW5vbG9neS5obDcub3JnL0NvZGVTeXN0ZW0vdjMtQWN0UmVhc29uI1RSRUFUIl0sImNvbnNlbnRfcG9saWN5IjpbImh0dHBzOi8vcGNtLmZoaXIuaGVhbHRoLmdvdi5pbC9jb25zZW50LXBvbGljeS9tZWRpY2FsLWluZm9ybWF0aW9uLW1vYmlsaXR5LWxhdy0yMDI0Il0sImNvbnNlbnRfcmVmZXJlbmNlIjpbImh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L0NvbnNlbnQvY29uc2VudC0xMjMiXX19fQ.ExampleSignature
                   scope: patient/Observation.rs
                   resource: https://fhir.hmo-b.example.org/r4
       responses:
@@ -459,12 +731,17 @@ paths:
               examples:
                 standaloneSmartAccessTokenResponse:
                   summary: Standalone SMART access token (opaque)
-                  description: |
-                    `scope` reports the app-launch grant returned to the client.
-                    It is not the Data Source's final enforcement scope. PCM derives
+                  description: '`scope` reports the app-launch grant returned to the client.
+
+                    It is not the Data Source''s final enforcement scope. PCM derives
+
                     the effective permissions from the applicable service
+
                     definition and returns them to the Data Source through active
+
                     token introspection.
+
+                    '
                   value:
                     access_token: 9d984f7d-c183-49f1-9b7b-9d7426204f17
                     token_type: Bearer
@@ -485,11 +762,24 @@ paths:
                     expires_in: 30
                     scope: system/*.crus
                 dataSourceTokenResponse:
-                  summary: Data source access token (opaque)
+                  summary: Data Source access token — production (30 seconds)
+                  description: Corresponds to the dataSourceAccess request example in production. The production and test
+                    Data Source access-token response examples differ only by environment and lifetime; clients must read
+                    expires_in.
                   value:
                     access_token: 8d3b1c9a-4f2a-4b9d-9b5a-6c1f4a7b2d11
                     token_type: Bearer
                     expires_in: 30
+                    scope: patient/Observation.rs
+                dataSourceTokenResponseTest:
+                  summary: Data Source access token — test (86400 seconds / 24 hours)
+                  description: Corresponds to the dataSourceAccessTest request example, the test-environment counterpart
+                    of dataSourceAccess. The production and test Data Source access-token response examples differ only
+                    by environment and lifetime; clients must read expires_in.
+                  value:
+                    access_token: 8d3b1c9a-4f2a-4b9d-9b5a-6c1f4a7b2d11
+                    token_type: Bearer
+                    expires_in: 86400
                     scope: patient/Observation.rs
                 presenceTokenResponse:
                   summary: PCM online presence token (opaque)
@@ -510,53 +800,92 @@ paths:
         '401':
           $ref: '#/components/responses/InvalidClient'
   /introspect:
-    servers:
-      - url: https://pcm2m.health.gov.il
     post:
-      tags: [OAuth2]
+      tags:
+      - OAuth2
       operationId: introspectToken
       summary: Introspect access token
-      description: |
-        Validates a subject access token and returns its associated authorization
+      description: 'Validates a subject access token and returns its associated authorization
+
         context to the Data Source that owns the token audience.
+
         Protected with transport-level mTLS. The introspecting client can
-        authenticate either with a 30-second bearer token whose exact resource is
+
+        authenticate either with a short-lived bearer token whose exact resource is
+
         this introspection endpoint, or with `private_key_jwt` fields directly in
+
         the form body. Supplying both methods is invalid.
-        PCM re-evaluates Organization, the target Data Source's currently referenced
+
+        PCM re-evaluates Organization, the target Data Source''s currently referenced
+
         Endpoint, Consent, HealthcareService instance, and canonical catalog state
+
         during introspection. An active response requires that Endpoint to remain
+
         `active` and that the subject token audience still equal its exact current
+
         address. A token does not authorize access after the Service Provider, target
+
         Data Source, Endpoint, instance, or catalog is no longer operationally
+
         active/usable. Endpoint suspension or retirement therefore yields
+
         `active=false` without changing the Consent.
+
         For a one-time Consent, each approved Data Source has its own one-hour
-        access window beginning with that Data Source's first qualifying active
+
+        access window beginning with that Data Source''s first qualifying active
+
         introspection. That window does not authorize another Data Source and is
+
         not a shared global window. Introspection returns `active=false` for that
+
         Data Source after its window ends.
+
         Unknown, inactive, wrong-audience, and other-Data-Source subject tokens
+
         receive the same privacy-safe `{"active":false}` response.
+
         A Data Source MAY cache an active introspection result only until the
-        returned token `exp`. PCM currently issues source tokens with a 30-second
-        lifetime, so the cache lasts no longer than the token's remaining lifetime
-        and never more than 30 seconds. The Data Source MAY introspect more often,
+
+        returned token `exp`. In production PCM issues source tokens with a 30-second
+
+        lifetime, so the cache there lasts no longer than the token''s remaining
+
+        lifetime and never more than 30 seconds. Lower environments issue longer
+
+        lifetimes, so the cache bound is always the returned `exp` / `expires_in`
+
+        value and never a fixed 30 seconds. The Data Source MAY introspect more often,
+
         but need not call introspection again for each protected request while the
+
         unexpired result is cached; it MUST continue to enforce the cached audience,
+
         scope, context, and all other returned constraints and stop using the result
+
         at `exp`.
+
         Every active response includes `pcm_authentication_context`, recording
+
         the mTLS certificate and client-assertion signing certificate observed
+
         when the subject token was issued. This PCM-specific field is
+
         informational: the access token remains Bearer, no standard top-level
+
         `cnf` is returned, and the Data Source MAY compare the current
+
         protected-resource mTLS certificate with
+
         `token_endpoint_mtls.x5t#S256` under its local policy.
+
+        '
       security:
-        - mtlsTransport: []
-          bearerAuth: []
-        - mtlsTransport: []
+      - mtlsTransport: []
+        bearerAuth: []
+      - mtlsTransport: []
       requestBody:
         required: true
         content:
@@ -570,13 +899,19 @@ paths:
                   token: 2f1b8b7e-2d1a-4b0b-9e9a-9f02a7b3b6a1
               privateKeyJwtIntrospection:
                 summary: Introspect opaque access token with private_key_jwt
-                description: |
-                  Decoded caller assertion: `iss=sub=pcm-client-hmo-b`,
-                  `aud=https://pcm2m.health.gov.il/introspect`, unique `jti`,
+                description: 'Decoded caller assertion: `iss=sub=pcm-client-hmo-b`,
+
+                  `aud=https://pcm2m.health.gov.il/api/fhir-service/r4/introspect`, unique `jti`,
+
                   and a short expiry. This caller credential is distinct from the
+
                   opaque subject token in `token`. The compact value uses the
+
                   required `ES256` header; its `ExampleSignature` segment is
+
                   illustrative rather than a cryptographic test vector.
+
+                  '
                 x-decoded-client-assertion:
                   header:
                     alg: ES256
@@ -584,15 +919,27 @@ paths:
                   claims:
                     iss: pcm-client-hmo-b
                     sub: pcm-client-hmo-b
-                    aud: https://pcm2m.health.gov.il/introspect
+                    aud: https://pcm2m.health.gov.il/api/fhir-service/r4/introspect
                     jti: direct-introspection-0001
                     iat: 1706640000
                     exp: 1706640300
                 value:
                   client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhtby1iIiwic3ViIjoicGNtLWNsaWVudC1obW8tYiIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9pbnRyb3NwZWN0IiwianRpIjoiZGlyZWN0LWludHJvc3BlY3Rpb24tMDAwMSIsImlhdCI6MTcwNjY0MDAwMCwiZXhwIjoxNzA2NjQwMzAwfQ.ExampleSignature
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50LWhtby1iIiwic3ViIjoicGNtLWNsaWVudC1obW8tYiIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L2ludHJvc3BlY3QiLCJqdGkiOiJkaXJlY3QtaW50cm9zcGVjdGlvbi0wMDAxIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.ExampleSignature
                   token: 2f1b8b7e-2d1a-4b0b-9e9a-9f02a7b3b6a1
                   token_type_hint: access_token
+              introspectRequestBearer:
+                summary: 'client-authentication: bearer token'
+                value:
+                  token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                  token_type_hint: access_token
+              introspectRequestAssertion:
+                summary: 'client-authentication: client assertion'
+                value:
+                  token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                  token_type_hint: access_token
+                  client_assertion_type: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
+                  client_assertion: eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwY20tY2xpZW50Iiwic3ViIjoicGNtLWNsaWVudCIsImF1ZCI6Imh0dHBzOi8vcGNtMm0uaGVhbHRoLmdvdi5pbC9hcGkvZmhpci1zZXJ2aWNlL3I0L2ludHJvc3BlY3QiLCJqdGkiOiJkaXJlY3QtaW50cm9zcGVjdGlvbi0wMDAyIiwiaWF0IjoxNzA2NjQwMDAwLCJleHAiOjE3MDY2NDAzMDB9.c2lnbmF0dXJl
       responses:
         '200':
           description: Introspection response
@@ -601,13 +948,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/IntrospectionResponse'
               examples:
-                dataSourceAccess:
-                  summary: Active Data Source-access token
+                dataSourceAccess-test:
+                  summary: Active Data Source-access token — test environment
                   value:
                     active: true
                     scope: patient/Observation.rs
                     client_id: pcm-client-hospital-a
-                    organization_id: "http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001"
+                    organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001
                     pcm_authentication_context:
                       token_endpoint_mtls:
                         x5t#S256: eiVFuKs_ZspXC6MYLWLzThgD1yj5U6Cgs_4JSQEBx_c
@@ -615,26 +962,83 @@ paths:
                         x5t#S256: zHVQke4ePAOhosYm2tgQ8hCC4wlNBJkV3iJ7w_LlL9Y
                       correlation_verified: true
                     fhirContext:
-                      - type: Patient
-                        role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
-                        identifier:
-                          system: http://fhir.health.gov.il/identifier/il-national-id
-                          value: '000000018'
-                      - type: Consent
-                        role: https://pcm.fhir.health.gov.il/fhir-context-role/consent
-                        identifier:
-                          system: http://pcm.fhir.health.gov.il/identifier/pcm-consent-id
-                          value: PCM-CONSENT-0001
-                      - type: HealthcareService
-                        role: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
-                        identifier:
-                          system: http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id
-                          value: PCM-HS-INST-0101
-                    exp: 1706640030
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
+                    - type: Consent
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/consent
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-consent-id
+                        value: PCM-CONSENT-0001
+                    - type: HealthcareService
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id
+                        value: PCM-HS-INST-0101
+                    exp: 1706726400
                     iat: 1706640000
-                    iss: https://pcm2m.health.gov.il
+                    iss: https://pcm2mtest.health.gov.il/api/fhir-service/r4
                     aud: https://fhir.hmo-b.example.org/r4
                     sub: pcm-client-hospital-a
+                dataSourceAccess:
+                  summary: Active Data Source-access token
+                  value:
+                    active: true
+                    scope: patient/Observation.rs
+                    client_id: pcm-client-hospital-a
+                    organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#PCM-ORG-HOSP-A-SP-001
+                    pcm_authentication_context:
+                      token_endpoint_mtls:
+                        x5t#S256: eiVFuKs_ZspXC6MYLWLzThgD1yj5U6Cgs_4JSQEBx_c
+                      client_assertion_signing:
+                        x5t#S256: zHVQke4ePAOhosYm2tgQ8hCC4wlNBJkV3iJ7w_LlL9Y
+                      correlation_verified: true
+                    fhirContext:
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
+                    - type: Consent
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/consent
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-consent-id
+                        value: PCM-CONSENT-0001
+                    - type: HealthcareService
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id
+                        value: PCM-HS-INST-0101
+                    exp: 1706640030
+                    iat: 1706640000
+                    iss: https://pcm2m.health.gov.il/api/fhir-service/r4
+                    aud: https://fhir.hmo-b.example.org/r4
+                    sub: pcm-client-hospital-a
+                onlinePresence-test:
+                  summary: Active online patient-presence token — test environment
+                  value:
+                    active: true
+                    scope: system/Patient.s?identifier=http://fhir.health.gov.il/identifier/il-national-id|000000018
+                    client_id: pcm-presence-orchestrator
+                    pcm_authentication_context:
+                      token_endpoint_mtls:
+                        x5t#S256: nwzmB9zd4GEeIova-8QpP43euPjM2b-7L0J33SFGGyI
+                      client_assertion_signing:
+                        x5t#S256: nwzmB9zd4GEeIova-8QpP43euPjM2b-7L0J33SFGGyI
+                      correlation_verified: true
+                    fhirContext:
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
+                    exp: 1706726400
+                    iat: 1706640000
+                    iss: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+                    aud: https://fhir.hmo-b.example.org/r4
+                    sub: pcm-presence-orchestrator
                 onlinePresence:
                   summary: Active online patient-presence token
                   value:
@@ -648,19 +1052,39 @@ paths:
                         x5t#S256: nwzmB9zd4GEeIova-8QpP43euPjM2b-7L0J33SFGGyI
                       correlation_verified: true
                     fhirContext:
-                      - type: Patient
-                        role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
-                        identifier:
-                          system: http://fhir.health.gov.il/identifier/il-national-id
-                          value: '000000018'
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
                     exp: 1706640030
                     iat: 1706640000
-                    iss: https://pcm2m.health.gov.il
+                    iss: https://pcm2m.health.gov.il/api/fhir-service/r4
+                    aud: https://fhir.hmo-b.example.org/r4
+                    sub: pcm-presence-orchestrator
+                batchPresence-test:
+                  summary: Active batch patient-presence token — test environment
+                  description: The authorized patient set is carried only in the constrained scope; top-level
+                    `patient` is omitted and `fhirContext` is absent entirely.
+                  value:
+                    active: true
+                    scope: system/Patient.s?identifier=http://fhir.health.gov.il/identifier/il-national-id|000000001,http://fhir.health.gov.il/identifier/il-national-id|000000002,http://fhir.health.gov.il/identifier/il-national-id|000000003
+                    client_id: pcm-presence-orchestrator
+                    pcm_authentication_context:
+                      token_endpoint_mtls:
+                        x5t#S256: nwzmB9zd4GEeIova-8QpP43euPjM2b-7L0J33SFGGyI
+                      client_assertion_signing:
+                        x5t#S256: nwzmB9zd4GEeIova-8QpP43euPjM2b-7L0J33SFGGyI
+                      correlation_verified: true
+                    exp: 1706726400
+                    iat: 1706640000
+                    iss: https://pcm2mtest.health.gov.il/api/fhir-service/r4
                     aud: https://fhir.hmo-b.example.org/r4
                     sub: pcm-presence-orchestrator
                 batchPresence:
                   summary: Active batch patient-presence token
-                  description: The authorized patient set is carried only in the constrained scope; top-level `patient` is omitted and `fhirContext` is absent entirely.
+                  description: The authorized patient set is carried only in the constrained scope; top-level
+                    `patient` is omitted and `fhirContext` is absent entirely.
                   value:
                     active: true
                     scope: system/Patient.s?identifier=http://fhir.health.gov.il/identifier/il-national-id|000000001,http://fhir.health.gov.il/identifier/il-national-id|000000002,http://fhir.health.gov.il/identifier/il-national-id|000000003
@@ -673,11 +1097,83 @@ paths:
                       correlation_verified: true
                     exp: 1706640030
                     iat: 1706640000
-                    iss: https://pcm2m.health.gov.il
+                    iss: https://pcm2m.health.gov.il/api/fhir-service/r4
                     aud: https://fhir.hmo-b.example.org/r4
                     sub: pcm-presence-orchestrator
                 inactive:
                   summary: Unknown, inactive, or non-visible subject token
+                  value:
+                    active: false
+                introspectActiveDataSourceTest:
+                  summary: 'token: valid; kind: data source access — test environment'
+                  value:
+                    active: true
+                    scope: patient/Observation.rs
+                    client_id: pcm-client-0000000000
+                    pcm_authentication_context:
+                      token_endpoint_mtls:
+                        x5t#S256: eiVFuKs_ZspXC6MYLWLzThgD1yj5U6Cgs_4JSQEBx_c
+                      client_assertion_signing:
+                        x5t#S256: zHVQke4ePAOhosYm2tgQ8hCC4wlNBJkV3iJ7w_LlL9Y
+                      correlation_verified: true
+                    organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#90101
+                    fhirContext:
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
+                    - type: Consent
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/consent
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-consent-id
+                        value: CON-90001
+                    - type: HealthcareService
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id
+                        value: INS-90001
+                    exp: 1767286400
+                    iat: 1767200000
+                    iss: https://pcm2mtest.health.gov.il/api/fhir-service/r4
+                    aud: https://source.example.org/fhir/r4
+                    sub: pcm-client-0000000000
+                introspectActiveDataSource:
+                  summary: 'token: valid; kind: data source access'
+                  value:
+                    active: true
+                    scope: patient/Observation.rs
+                    client_id: pcm-client-0000000000
+                    pcm_authentication_context:
+                      token_endpoint_mtls:
+                        x5t#S256: eiVFuKs_ZspXC6MYLWLzThgD1yj5U6Cgs_4JSQEBx_c
+                      client_assertion_signing:
+                        x5t#S256: zHVQke4ePAOhosYm2tgQ8hCC4wlNBJkV3iJ7w_LlL9Y
+                      correlation_verified: true
+                    organization_id: http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#90101
+                    fhirContext:
+                    - type: Patient
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
+                      identifier:
+                        system: http://fhir.health.gov.il/identifier/il-national-id
+                        value: '000000018'
+                    - type: Consent
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/consent
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-consent-id
+                        value: CON-90001
+                    - type: HealthcareService
+                      role: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
+                      identifier:
+                        system: http://pcm.fhir.health.gov.il/identifier/pcm-healthcareservice-instance-id
+                        value: INS-90001
+                    exp: 1767200030
+                    iat: 1767200000
+                    iss: https://pcm2m.health.gov.il/api/fhir-service/r4
+                    aud: https://source.example.org/fhir/r4
+                    sub: pcm-client-0000000000
+                introspectInactive:
+                  summary: 'token: not valid'
                   value:
                     active: false
         '400':
@@ -686,16 +1182,15 @@ paths:
           $ref: '#/components/responses/IntrospectionUnauthorized'
         '403':
           $ref: '#/components/responses/IntrospectionForbidden'
-
 components:
   securitySchemes:
     mtlsTransport:
       type: mutualTLS
-      description: >
-        mTLS is required on every PCM HTTP endpoint, including discovery,
-        authorization, token, and introspection. The presented client certificate
-        is not the OAuth2 client authentication method; OAuth2 clients additionally
-        authenticate with private_key_jwt where the endpoint requires it.
+      description: 'mTLS is required on every PCM HTTP endpoint, including discovery, authorization, token,
+        and introspection. The presented client certificate is not the OAuth2 client authentication method;
+        OAuth2 clients additionally authenticate with private_key_jwt where the endpoint requires it.
+
+        '
     bearerAuth:
       type: http
       scheme: bearer
@@ -704,24 +1199,28 @@ components:
   schemas:
     OAuthAuthorizationServerMetadata:
       type: object
-      description: |
-        OAuth authorization-server metadata for the current environment.
+      description: 'OAuth authorization-server metadata for the current environment.
+
         Clients must tolerate additional metadata properties and additional
+
         advertised algorithm values. `registration_endpoint` is omitted until
+
         PCM enables a supported dynamic-registration interaction.
+
+        '
       required:
-        - issuer
-        - authorization_endpoint
-        - token_endpoint
-        - introspection_endpoint
-        - grant_types_supported
-        - response_types_supported
-        - code_challenge_methods_supported
-        - token_endpoint_auth_methods_supported
-        - token_endpoint_auth_signing_alg_values_supported
-        - introspection_endpoint_auth_methods_supported
-        - introspection_endpoint_auth_signing_alg_values_supported
-        - tls_client_certificate_bound_access_tokens
+      - issuer
+      - authorization_endpoint
+      - token_endpoint
+      - introspection_endpoint
+      - grant_types_supported
+      - response_types_supported
+      - code_challenge_methods_supported
+      - token_endpoint_auth_methods_supported
+      - token_endpoint_auth_signing_alg_values_supported
+      - introspection_endpoint_auth_methods_supported
+      - introspection_endpoint_auth_signing_alg_values_supported
+      - tls_client_certificate_bound_access_tokens
       properties:
         issuer:
           type: string
@@ -738,7 +1237,8 @@ components:
         registration_endpoint:
           type: string
           format: uri
-          description: Optional OAuth 2.0 dynamic client-registration endpoint. Omitted until the capability is enabled.
+          description: Optional OAuth 2.0 dynamic client-registration endpoint. Omitted until the capability
+            is enabled.
         grant_types_supported:
           type: array
           items:
@@ -747,6 +1247,11 @@ components:
           type: array
           items:
             type: string
+        response_modes_supported:
+          type: array
+          items:
+            type: string
+          description: Response modes advertised for the authorization-code flow.
         code_challenge_methods_supported:
           type: array
           items:
@@ -764,7 +1269,8 @@ components:
             const: ES256
           items:
             type: string
-          description: ES256 is the current required baseline; PCM may add other advertised values while retaining ES256 during compatible migration.
+          description: ES256 is the current required baseline; PCM may add other advertised values while
+            retaining ES256 during compatible migration.
         introspection_endpoint_auth_methods_supported:
           type: array
           items:
@@ -778,30 +1284,30 @@ components:
             const: ES256
           items:
             type: string
-          description: ES256 is the current required baseline; PCM may add other advertised values while retaining ES256 during compatible migration.
+          description: ES256 is the current required baseline; PCM may add other advertised values while
+            retaining ES256 during compatible migration.
         tls_client_certificate_bound_access_tokens:
           type: boolean
           const: false
-          description: PCM issues Bearer access tokens and does not advertise RFC 8705 certificate-bound access tokens.
-
+          description: PCM issues Bearer access tokens and does not advertise RFC 8705 certificate-bound
+            access tokens.
     TokenRequest:
       oneOf:
-        - $ref: '#/components/schemas/AuthorizationCodeTokenRequest'
-        - $ref: '#/components/schemas/PCMManagementTokenRequest'
-        - $ref: '#/components/schemas/IntrospectionBearerTokenRequest'
-        - $ref: '#/components/schemas/DataSourceAccessTokenRequest'
-        - $ref: '#/components/schemas/PresenceTokenRequest'
-
+      - $ref: '#/components/schemas/AuthorizationCodeTokenRequest'
+      - $ref: '#/components/schemas/PCMManagementTokenRequest'
+      - $ref: '#/components/schemas/IntrospectionBearerTokenRequest'
+      - $ref: '#/components/schemas/DataSourceAccessTokenRequest'
+      - $ref: '#/components/schemas/PresenceTokenRequest'
     AuthorizationCodeTokenRequest:
       type: object
       additionalProperties: false
       required:
-        - grant_type
-        - code
-        - redirect_uri
-        - code_verifier
-        - client_assertion_type
-        - client_assertion
+      - grant_type
+      - code
+      - redirect_uri
+      - code_verifier
+      - client_assertion_type
+      - client_assertion
       properties:
         grant_type:
           type: string
@@ -822,11 +1328,15 @@ components:
           $ref: '#/components/schemas/ClientAssertionType'
         client_assertion:
           $ref: '#/components/schemas/ClientAssertion'
-
     PCMManagementTokenRequest:
       type: object
       additionalProperties: false
-      required: [grant_type, client_assertion_type, client_assertion, scope, resource]
+      required:
+      - grant_type
+      - client_assertion_type
+      - client_assertion
+      - scope
+      - resource
       properties:
         grant_type:
           type: string
@@ -838,17 +1348,27 @@ components:
         scope:
           type: string
           const: system/*.crus
-          description: Coarse PCM-management authorization ceiling; role, ownership, Organization state, field, and operation rules still apply. A participant Endpoint being suspended or off does not by itself prevent its owner from obtaining management access to resume or replace it.
+          description: Coarse PCM-management authorization ceiling; role, ownership, Organization state,
+            field, and operation rules still apply. A participant Endpoint being suspended or off does
+            not by itself prevent its owner from obtaining management access to resume or replace it.
         resource:
           type: string
           format: uri
-          const: https://pcm2m.health.gov.il/r4
-          description: Exact PCM FHIR REST API base, not an individual resource URL.
-
+          description: Exact PCM FHIR REST API base, not an individual resource URL. Must be the value
+            for the environment being called. The published specification pins this to the production
+            literal; both environment values are accepted here.
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4
+          - https://pcm2m.health.gov.il/api/fhir-service/r4
     IntrospectionBearerTokenRequest:
       type: object
       additionalProperties: false
-      required: [grant_type, client_assertion_type, client_assertion, scope, resource]
+      required:
+      - grant_type
+      - client_assertion_type
+      - client_assertion
+      - scope
+      - resource
       properties:
         grant_type:
           type: string
@@ -860,16 +1380,25 @@ components:
         scope:
           type: string
           const: system/*.crus
-          description: Common PCM authorization ceiling; the exact resource and active Data Source role remain mandatory.
+          description: Common PCM authorization ceiling; the exact resource and active Data Source role
+            remain mandatory.
         resource:
           type: string
           format: uri
-          const: https://pcm2m.health.gov.il/introspect
-
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4/introspect
+          - https://pcm2m.health.gov.il/api/fhir-service/r4/introspect
+          description: Must be the value for the environment being called. The published specification
+            pins this to the production literal; both environment values are accepted here.
     DataSourceAccessTokenRequest:
       type: object
       additionalProperties: false
-      required: [grant_type, client_assertion_type, client_assertion, scope, resource]
+      required:
+      - grant_type
+      - client_assertion_type
+      - client_assertion
+      - scope
+      - resource
       properties:
         grant_type:
           type: string
@@ -878,29 +1407,37 @@ components:
           $ref: '#/components/schemas/ClientAssertionType'
         client_assertion:
           allOf:
-            - $ref: '#/components/schemas/ClientAssertion'
+          - $ref: '#/components/schemas/ClientAssertion'
           contentMediaType: application/jwt
           contentSchema:
             $ref: '#/components/schemas/DataSourceAccessAssertionClaims'
           x-decoded-payload-schema:
             $ref: '#/components/schemas/DataSourceAccessAssertionClaims'
-          description: |
-            Fresh private_key_jwt assertion containing the profiled
+          description: 'Fresh private_key_jwt assertion containing the profiled
+
             `extensions.hl7-b2b` object described by
+
             `DataSourceAccessAssertionClaims`. PCM-management context is not used.
+
+            '
         scope:
           type: string
-          pattern: '^(?!system/\*\.crus$)(?!system/Patient\.s\?identifier=).+'
+          pattern: ^(?!system/\*\.crus$)(?!system/Patient\.s\?identifier=).+
           description: Requested service-derived SMART v2 Data Source-access scope.
         resource:
           type: string
           format: uri
-          description: Exact address of the selected Data Source's currently referenced active participant Endpoint. A suspended/off Endpoint or a replaced address is an invalid target.
-
+          description: Exact address of the selected Data Source's currently referenced active participant
+            Endpoint. A suspended/off Endpoint or a replaced address is an invalid target.
     PresenceTokenRequest:
       type: object
       additionalProperties: false
-      required: [grant_type, client_assertion_type, client_assertion, scope, resource]
+      required:
+      - grant_type
+      - client_assertion_type
+      - client_assertion
+      - scope
+      - resource
       properties:
         grant_type:
           type: string
@@ -909,19 +1446,18 @@ components:
           $ref: '#/components/schemas/ClientAssertionType'
         client_assertion:
           allOf:
-            - $ref: '#/components/schemas/ClientAssertion'
+          - $ref: '#/components/schemas/ClientAssertion'
           description: Fresh assertion using the PCM-owned presence-orchestrator authorization profile.
         scope:
           $ref: '#/components/schemas/PresenceScope'
         resource:
           type: string
           format: uri
-          description: Exact address of the selected Data Source's currently referenced active participant Endpoint. A suspended/off Endpoint or a replaced address is an invalid target.
-
+          description: Exact address of the selected Data Source's currently referenced active participant
+            Endpoint. A suspended/off Endpoint or a replaced address is an invalid target.
     ClientAssertionType:
       type: string
       const: urn:ietf:params:oauth:client-assertion-type:jwt-bearer
-
     ClientAssertion:
       type: string
       contentMediaType: application/jwt
@@ -929,26 +1465,46 @@ components:
         $ref: '#/components/schemas/ClientAssertionClaims'
       x-decoded-payload-schema:
         $ref: '#/components/schemas/ClientAssertionClaims'
-      description: |
-        Fresh compact private_key_jwt assertion signed with ES256 and the key
+      description: 'Fresh compact private_key_jwt assertion signed with ES256 and the key
+
         registered out of band for the opaque client ID. `iss` and `sub` equal
+
         that client ID; `aud` is the exact PCM OAuth endpoint receiving the
+
         assertion; `iat` is the issue time; `exp` is no more than five minutes
+
         after `iat`; and `jti` is unique. PCM resolves the verification key from
+
         the non-public client registration. The JOSE header contains exactly
+
         `alg=ES256` and `typ=JWT`; the profile omits `kid`, `x5c`,
+
         `x5t#S256`, and `jku` from the header. When one certificate is registered
+
         for the calling role/application, it is used for mTLS and assertion signing.
+
         When PCM registered different certificates for that client, the payload SHOULD contain
+
         `cnf.x5t#S256` for the certificate presented on the mTLS connection.
+
         PCM rejects a supplied value that does not match the observed mTLS
+
         certificate. This correlates client credentials and does not make the
+
         issued access token certificate-bound. A retried request uses a new
+
         assertion.
 
+        '
     ClientAssertionClaims:
       type: object
-      required: [iss, sub, aud, jti, iat, exp]
+      required:
+      - iss
+      - sub
+      - aud
+      - jti
+      - iat
+      - exp
       properties:
         iss:
           type: string
@@ -966,21 +1522,28 @@ components:
         cnf:
           $ref: '#/components/schemas/CertificateThumbprint'
       additionalProperties: true
-
     CertificateThumbprint:
       type: object
       additionalProperties: false
-      required: [x5t#S256]
+      required:
+      - x5t#S256
       properties:
         x5t#S256:
           type: string
-          pattern: '^[A-Za-z0-9_-]{43}$'
-          description: Base64url-encoded SHA-256 thumbprint of the DER-encoded X.509 certificate, without padding.
-
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Base64url-encoded SHA-256 thumbprint of the DER-encoded X.509 certificate, without
+            padding.
     DataSourceAccessAssertionClaims:
       type: object
       additionalProperties: false
-      required: [iss, sub, aud, jti, iat, exp, extensions]
+      required:
+      - iss
+      - sub
+      - aud
+      - jti
+      - iat
+      - exp
+      - extensions
       properties:
         iss:
           type: string
@@ -991,7 +1554,11 @@ components:
         aud:
           type: string
           format: uri
-          const: https://pcm2m.health.gov.il/token
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4/token
+          - https://pcm2m.health.gov.il/api/fhir-service/r4/token
+          description: Must be the value for the environment being called. The published specification
+            pins this to the production literal; both environment values are accepted here.
         jti:
           type: string
         iat:
@@ -1000,30 +1567,35 @@ components:
           type: integer
         cnf:
           allOf:
-            - $ref: '#/components/schemas/CertificateThumbprint'
-          description: |
-            Optional assertion-to-mTLS correlation. When the assertion-signing
+          - $ref: '#/components/schemas/CertificateThumbprint'
+          description: 'Optional assertion-to-mTLS correlation. When the assertion-signing
+
             certificate differs from the certificate presented on the token
+
             endpoint mTLS connection, the client SHOULD include the latter
-            certificate's thumbprint. This does not bind the resulting Bearer
+
+            certificate''s thumbprint. This does not bind the resulting Bearer
+
             access token.
+
+            '
         extensions:
           type: object
           additionalProperties: false
-          required: [hl7-b2b]
+          required:
+          - hl7-b2b
           properties:
             hl7-b2b:
               $ref: '#/components/schemas/B2BAuthorizationExtension'
-
     B2BAuthorizationExtension:
       type: object
       additionalProperties: false
       required:
-        - version
-        - organization_id
-        - purpose_of_use
-        - consent_policy
-        - consent_reference
+      - version
+      - organization_id
+      - purpose_of_use
+      - consent_policy
+      - consent_reference
       properties:
         version:
           type: string
@@ -1043,7 +1615,8 @@ components:
           type: array
           minItems: 1
           uniqueItems: true
-          description: One or more applicable Consent policy URI strings; release 1 supports the listed PCM policy URI.
+          description: One or more applicable Consent policy URI strings; release 1 supports the listed
+            PCM policy URI.
           items:
             type: string
             format: uri
@@ -1054,82 +1627,112 @@ components:
           items:
             type: string
             format: uri
-            pattern: '^https://[^/?#]+/r4/Consent/[A-Za-z0-9.-]{1,64}$'
-          description: |
-            Literal absolute, resolvable PCM Consent instance URL using the
-            registered PCM HTTPS origin for the environment and the exact
-            `/r4/Consent/{logical-id}` path. A Consent business identifier,
+            pattern: ^https://[^/?#]+/api/fhir-service/r4/Consent/[A-Za-z0-9.-]{1,64}$
+          description: 'Literal absolute, resolvable PCM Consent instance URL using the
+
+            registered PCM HTTPS base for the environment and the exact
+
+            `/Consent/{logical-id}` path appended to the exact environment FHIR base. A Consent business identifier,
+
             description, or indirect service reference is not valid here.
 
+            '
     PCMOrganizationIdentifierUri:
       type: string
       format: uri
-      pattern: '^http://pcm\.fhir\.health\.gov\.il/identifier/pcm-organization-id#[^#\s]+$'
-      description: |
-        Registered stable identifier for the requesting Service Provider,
+      pattern: ^http://pcm\.fhir\.health\.gov\.il/identifier/pcm-organization-id#[^#\s]+$
+      description: 'Registered stable identifier for the requesting Service Provider,
+
         serialized using the HL7 B2B preferred identifier URI form:
+
         `http://pcm.fhir.health.gov.il/identifier/pcm-organization-id#{value}`.
+
         It identifies the organizational requestor, not the target Data Source,
+
         and the value is the PCM Organization business identifier, not the FHIR
+
         logical id.
 
+        '
     PresenceScope:
       oneOf:
-        - $ref: '#/components/schemas/OnlinePresenceScope'
-        - $ref: '#/components/schemas/BatchPresenceScope'
-
+      - $ref: '#/components/schemas/OnlinePresenceScope'
+      - $ref: '#/components/schemas/BatchPresenceScope'
     OnlinePresenceScope:
       type: string
-      pattern: '^system/Patient\.s\?identifier=[^|,\s]+\|[^,\s]+$'
+      pattern: ^system/Patient\.s\?identifier=[^|,\s]+\|[^,\s]+$
       description: Exact count-only Patient search scope containing one identifier in `system|value` form.
-
     BatchPresenceScope:
       type: string
-      pattern: '^system/Patient\.s\?identifier=[^|,\s]+\|[^,\s]+,[^|,\s]+\|[^,\s]+(?:,[^|,\s]+\|[^,\s]+)*$'
-      description: Count-only Patient search scope containing at least two comma-separated identifiers in `system|value` form.
-
+      pattern: ^system/Patient\.s\?identifier=[^|,\s]+\|[^,\s]+,[^|,\s]+\|[^,\s]+(?:,[^|,\s]+\|[^,\s]+)*$
+      description: Count-only Patient search scope containing at least two comma-separated identifiers
+        in `system|value` form.
     TokenResponse:
       type: object
-      description: |
-        Opaque release-1 access-token response. No token class returns a refresh
+      description: 'Opaque release-1 access-token response. No token class returns a refresh
+
         token. For standalone SMART, `scope` reports the app-launch grant returned
+
         to the client; a Data Source obtains the authoritative, service-derived
+
         enforcement scope from active introspection. Tokens remain Bearer tokens
+
         even when the client assertion used for issuance contains `cnf`.
+
+        '
       additionalProperties: false
       required:
-        - access_token
-        - token_type
-        - expires_in
-        - scope
+      - access_token
+      - token_type
+      - expires_in
+      - scope
       properties:
         access_token:
           type: string
-          description: Opaque bearer token reusable at its one authorized audience/resource server until expiry.
+          description: Opaque bearer token reusable at its one authorized audience/resource server until
+            expiry.
         token_type:
           type: string
           const: Bearer
         expires_in:
           type: integer
-          const: 30
-          description: PCM access-token lifetime in seconds.
+          minimum: 1
+          description: 'PCM access-token lifetime in seconds. Production issues 30
+
+            seconds. The test environment issues 86400 seconds (24 hours), so an
+
+            onboarding organization is not re-minting a token per call. Clients MUST
+
+            read this value and MUST NOT assume a fixed lifetime: the two environments
+
+            differ by more than three orders of magnitude, and a client that hardcodes
+
+            either one breaks in the other.
+
+            '
+          examples:
+          - 30
+          - 86400
         scope:
           type: string
-          description: |
-            Scope associated with this client-facing token response. For a
+          description: 'Scope associated with this client-facing token response. For a
+
             standalone SMART response this is the app-launch grant, which can be
+
             broader or otherwise different from the service-derived effective
+
             scope returned to a Data Source through introspection.
 
+            '
     IntrospectionRequest:
       oneOf:
-        - $ref: '#/components/schemas/BearerAuthenticatedIntrospectionRequest'
-        - $ref: '#/components/schemas/DirectAssertionIntrospectionRequest'
-
+      - $ref: '#/components/schemas/BearerAuthenticatedIntrospectionRequest'
+      - $ref: '#/components/schemas/DirectAssertionIntrospectionRequest'
     BearerAuthenticatedIntrospectionRequest:
       type: object
       additionalProperties: false
-      required: [token]
+      required:
+      - token
       properties:
         token:
           type: string
@@ -1137,11 +1740,13 @@ components:
         token_type_hint:
           type: string
           const: access_token
-
     DirectAssertionIntrospectionRequest:
       type: object
       additionalProperties: false
-      required: [token, client_assertion_type, client_assertion]
+      required:
+      - token
+      - client_assertion_type
+      - client_assertion
       properties:
         token:
           type: string
@@ -1153,44 +1758,63 @@ components:
           $ref: '#/components/schemas/ClientAssertionType'
         client_assertion:
           allOf:
-            - $ref: '#/components/schemas/ClientAssertion'
-          description: Fresh assertion with exact `aud=https://pcm2m.health.gov.il/introspect`.
-
+          - $ref: '#/components/schemas/ClientAssertion'
+          description: Fresh assertion whose `aud` is the exact introspection endpoint of
+            the environment being called - `https://pcm2mtest.health.gov.il/api/fhir-service/r4/introspect`
+            for test, `https://pcm2m.health.gov.il/api/fhir-service/r4/introspect` for production.
     IntrospectionResponse:
       oneOf:
-        - $ref: '#/components/schemas/ActiveIntrospectionResponse'
-        - $ref: '#/components/schemas/InactiveIntrospectionResponse'
-
+      - $ref: '#/components/schemas/ActiveIntrospectionResponse'
+      - $ref: '#/components/schemas/InactiveIntrospectionResponse'
     ActiveIntrospectionResponse:
       oneOf:
-        - $ref: '#/components/schemas/DataSourceAccessIntrospectionResponse'
-        - $ref: '#/components/schemas/OnlinePresenceIntrospectionResponse'
-        - $ref: '#/components/schemas/BatchPresenceIntrospectionResponse'
-
+      - $ref: '#/components/schemas/DataSourceAccessIntrospectionResponse'
+      - $ref: '#/components/schemas/OnlinePresenceIntrospectionResponse'
+      - $ref: '#/components/schemas/BatchPresenceIntrospectionResponse'
     ActiveIntrospectionResponseBase:
       type: object
-      description: |
-        Active authorization context for this audience. For one-time Consent
+      description: 'Active authorization context for this audience. For one-time Consent
+
         access, each approved Data Source has an independent one-hour window
-        beginning with that Data Source's first qualifying active introspection;
+
+        beginning with that Data Source''s first qualifying active introspection;
+
         the window does not authorize another Data Source. PCM never returns the
-        top-level SMART `patient` field because it does not know the Data Source's
+
+        top-level SMART `patient` field because it does not know the Data Source''s
+
         local Patient logical id. PCM also never returns standard top-level `cnf`
+
         because the access token is not an RFC 8705 certificate-bound token.
+
+        '
       additionalProperties: false
-      required: [active, scope, client_id, pcm_authentication_context, exp, iss, aud, sub]
+      required:
+      - active
+      - scope
+      - client_id
+      - pcm_authentication_context
+      - exp
+      - iss
+      - aud
+      - sub
       properties:
         active:
           type: boolean
           const: true
         scope:
           type: string
-          description: |
-            Authoritative effective permissions for this Data Source and token.
+          description: 'Authoritative effective permissions for this Data Source and token.
+
             PCM derives this scope from the applicable authorization context,
+
             including the service definition for service-based access. It may be
+
             narrower or otherwise different from the scope reported to the client
+
             during the app-launch token response.
+
+            '
         client_id:
           type: string
           description: Opaque PCM-assigned OAuth client identifier for the authenticated role/application.
@@ -1198,16 +1822,22 @@ components:
           $ref: '#/components/schemas/PCMAuthenticationContext'
         organization_id:
           $ref: '#/components/schemas/PCMOrganizationIdentifierUri'
-          description: |
-            Required for participant Service Provider Data Source-access tokens and
+          description: 'Required for participant Service Provider Data Source-access tokens and
+
             omitted for the PCM presence orchestrator.
+
+            '
         fhirContext:
           type: array
-          description: |
-            Typed identifier context. Ordinary Data Source access contains
+          description: 'Typed identifier context. Ordinary Data Source access contains
+
             Patient, Consent, and HealthcareService items. Online presence
+
             contains only Patient. Batch presence omits this field because its
+
             patient set is already encoded in scope.
+
+            '
           items:
             $ref: '#/components/schemas/FhirContextItem'
         exp:
@@ -1217,136 +1847,154 @@ components:
         iss:
           type: string
           format: uri
-          const: https://pcm2m.health.gov.il
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4
+          - https://pcm2m.health.gov.il/api/fhir-service/r4
+          description: Must be the value for the environment being called. The published specification
+            pins this to the production literal; both environment values are accepted here.
         aud:
           type: string
           format: uri
-          description: Audience/resource server for the token. For data-source access tokens this is the data source FHIR base URL supplied as the token request `resource`.
+          description: Audience/resource server for the token. For data-source access tokens this is the
+            data source FHIR base URL supplied as the token request `resource`.
         sub:
           type: string
           description: OAuth subject for the token.
-
     PCMAuthenticationContext:
       type: object
       additionalProperties: false
       required:
-        - token_endpoint_mtls
-        - client_assertion_signing
-        - correlation_verified
-      description: |
-        PCM-specific informational record of the two certificate roles observed
+      - token_endpoint_mtls
+      - client_assertion_signing
+      - correlation_verified
+      description: 'PCM-specific informational record of the two certificate roles observed
+
         during subject-token issuance. It is not a standard `cnf` claim and does
+
         not change Bearer-token semantics. A Data Source MAY apply local policy
+
         by comparing the protected-resource mTLS certificate to
+
         `token_endpoint_mtls`.
+
+        '
       properties:
         token_endpoint_mtls:
           allOf:
-            - $ref: '#/components/schemas/CertificateThumbprint'
+          - $ref: '#/components/schemas/CertificateThumbprint'
           description: Certificate presented on the token endpoint mTLS connection.
         client_assertion_signing:
           allOf:
-            - $ref: '#/components/schemas/CertificateThumbprint'
+          - $ref: '#/components/schemas/CertificateThumbprint'
           description: Certificate whose registered public key verified the private_key_jwt assertion.
         correlation_verified:
           type: boolean
           const: true
-          description: PCM verified that both observed certificate roles belong to the authenticated client and that any supplied assertion `cnf` matched the mTLS connection.
-
+          description: PCM verified that both observed certificate roles belong to the authenticated client
+            and that any supplied assertion `cnf` matched the mTLS connection.
     DataSourceAccessIntrospectionResponse:
       allOf:
-        - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
-        - type: object
-          required: [organization_id, fhirContext]
-          not:
-            required: [client_id]
-            properties:
-              client_id:
-                const: pcm-presence-orchestrator
+      - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
+      - type: object
+        required:
+        - organization_id
+        - fhirContext
+        not:
+          required:
+          - client_id
           properties:
-            organization_id:
-              $ref: '#/components/schemas/PCMOrganizationIdentifierUri'
-            scope:
-              type: string
-              pattern: '^(?!system/\*\.crus$)(?!system/Patient\.s\?identifier=).+'
-              description: |
-                Authoritative service-derived patient/resource access scope that
-                the Data Source enforces. It may differ from the client-facing
-                app-launch scope. Management and presence scopes are not valid for
-                this token class.
-            fhirContext:
-              type: array
-              minItems: 3
-              maxItems: 3
-              uniqueItems: true
-              items:
-                $ref: '#/components/schemas/FhirContextItem'
-              allOf:
-                - contains:
-                    $ref: '#/components/schemas/PatientFhirContext'
-                  minContains: 1
-                  maxContains: 1
-                - contains:
-                    $ref: '#/components/schemas/ConsentFhirContext'
-                  minContains: 1
-                  maxContains: 1
-                - contains:
-                    $ref: '#/components/schemas/HealthcareServiceFhirContext'
-                  minContains: 1
-                  maxContains: 1
+            client_id:
+              const: pcm-presence-orchestrator
+        properties:
+          organization_id:
+            $ref: '#/components/schemas/PCMOrganizationIdentifierUri'
+          scope:
+            type: string
+            pattern: ^(?!system/\*\.crus$)(?!system/Patient\.s\?identifier=).+
+            description: 'Authoritative service-derived patient/resource access scope that
 
+              the Data Source enforces. It may differ from the client-facing
+
+              app-launch scope. Management and presence scopes are not valid for
+
+              this token class.
+
+              '
+          fhirContext:
+            type: array
+            minItems: 3
+            maxItems: 3
+            uniqueItems: true
+            items:
+              $ref: '#/components/schemas/FhirContextItem'
+            allOf:
+            - contains:
+                $ref: '#/components/schemas/PatientFhirContext'
+              minContains: 1
+              maxContains: 1
+            - contains:
+                $ref: '#/components/schemas/ConsentFhirContext'
+              minContains: 1
+              maxContains: 1
+            - contains:
+                $ref: '#/components/schemas/HealthcareServiceFhirContext'
+              minContains: 1
+              maxContains: 1
     OnlinePresenceIntrospectionResponse:
       allOf:
-        - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
-        - type: object
-          required: [fhirContext]
-          properties:
-            client_id:
-              const: pcm-presence-orchestrator
-            scope:
-              $ref: '#/components/schemas/OnlinePresenceScope'
-            organization_id: false
-            fhirContext:
-              type: array
-              minItems: 1
-              maxItems: 1
-              items:
-                $ref: '#/components/schemas/PatientFhirContext'
-
+      - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
+      - type: object
+        required:
+        - fhirContext
+        properties:
+          client_id:
+            const: pcm-presence-orchestrator
+          scope:
+            $ref: '#/components/schemas/OnlinePresenceScope'
+          organization_id: false
+          fhirContext:
+            type: array
+            minItems: 1
+            maxItems: 1
+            items:
+              $ref: '#/components/schemas/PatientFhirContext'
     BatchPresenceIntrospectionResponse:
       allOf:
-        - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
-        - type: object
-          properties:
-            client_id:
-              const: pcm-presence-orchestrator
-            scope:
-              $ref: '#/components/schemas/BatchPresenceScope'
-            organization_id: false
-            fhirContext: false
-
+      - $ref: '#/components/schemas/ActiveIntrospectionResponseBase'
+      - type: object
+        properties:
+          client_id:
+            const: pcm-presence-orchestrator
+          scope:
+            $ref: '#/components/schemas/BatchPresenceScope'
+          organization_id: false
+          fhirContext: false
     InactiveIntrospectionResponse:
       type: object
-      description: |
-        Privacy-safe inactive result, including after this Data Source's
+      description: 'Privacy-safe inactive result, including after this Data Source''s
+
         source-specific one-hour window for one-time Consent access has ended.
+
+        '
       additionalProperties: false
-      required: [active]
+      required:
+      - active
       properties:
         active:
           type: boolean
           const: false
-
     FhirContextItem:
       oneOf:
-        - $ref: '#/components/schemas/PatientFhirContext'
-        - $ref: '#/components/schemas/ConsentFhirContext'
-        - $ref: '#/components/schemas/HealthcareServiceFhirContext'
-
+      - $ref: '#/components/schemas/PatientFhirContext'
+      - $ref: '#/components/schemas/ConsentFhirContext'
+      - $ref: '#/components/schemas/HealthcareServiceFhirContext'
     PatientFhirContext:
       type: object
       additionalProperties: false
-      required: [type, role, identifier]
+      required:
+      - type
+      - role
+      - identifier
       properties:
         type:
           type: string
@@ -1357,11 +2005,13 @@ components:
           const: https://pcm.fhir.health.gov.il/fhir-context-role/authorization-patient
         identifier:
           $ref: '#/components/schemas/PatientIdentifier'
-
     ConsentFhirContext:
       type: object
       additionalProperties: false
-      required: [type, role, identifier]
+      required:
+      - type
+      - role
+      - identifier
       properties:
         type:
           type: string
@@ -1372,11 +2022,13 @@ components:
           const: https://pcm.fhir.health.gov.il/fhir-context-role/consent
         identifier:
           $ref: '#/components/schemas/ConsentBusinessIdentifier'
-
     HealthcareServiceFhirContext:
       type: object
       additionalProperties: false
-      required: [type, role, identifier]
+      required:
+      - type
+      - role
+      - identifier
       properties:
         type:
           type: string
@@ -1387,11 +2039,12 @@ components:
           const: https://pcm.fhir.health.gov.il/fhir-context-role/healthcare-service
         identifier:
           $ref: '#/components/schemas/HealthcareServiceBusinessIdentifier'
-
     ConsentBusinessIdentifier:
       type: object
       additionalProperties: false
-      required: [system, value]
+      required:
+      - system
+      - value
       properties:
         system:
           type: string
@@ -1400,11 +2053,12 @@ components:
         value:
           type: string
           minLength: 1
-
     HealthcareServiceBusinessIdentifier:
       type: object
       additionalProperties: false
-      required: [system, value]
+      required:
+      - system
+      - value
       properties:
         system:
           type: string
@@ -1413,11 +2067,12 @@ components:
         value:
           type: string
           minLength: 1
-
     PatientIdentifier:
       type: object
       additionalProperties: false
-      required: [system, value]
+      required:
+      - system
+      - value
       properties:
         system:
           type: string
@@ -1425,11 +2080,11 @@ components:
         value:
           type: string
           minLength: 1
-
     OAuthErrorBody:
       type: object
       additionalProperties: false
-      required: [error]
+      required:
+      - error
       properties:
         error:
           type: string
@@ -1448,7 +2103,6 @@ components:
               value:
                 error: invalid_request
                 error_description: Missing resource parameter (RFC 8707)
-
     TokenRequestError:
       description: OAuth2 token-request error
       content:
@@ -1481,7 +2135,6 @@ components:
               value:
                 error: invalid_target
                 error_description: Supply exactly one registered resource for this token class
-
     InvalidClient:
       description: OAuth2 client-authentication failure
       content:
@@ -1493,8 +2146,8 @@ components:
               summary: Invalid client assertion
               value:
                 error: invalid_client
-                error_description: Missing or invalid client_assertion, including a supplied cnf that does not match the mTLS certificate
-
+                error_description: Missing or invalid client_assertion, including a supplied cnf that
+                  does not match the mTLS certificate
     IntrospectionInvalidRequest:
       description: Malformed introspection request
       content:
@@ -1506,8 +2159,8 @@ components:
               summary: Missing subject token or ambiguous caller authentication
               value:
                 error: invalid_request
-                error_description: Supply a subject token and exactly one supported caller-authentication method
-
+                error_description: Supply a subject token and exactly one supported caller-authentication
+                  method
     IntrospectionUnauthorized:
       description: Invalid direct assertion or bearer caller credential
       headers:
@@ -1530,7 +2183,6 @@ components:
               value:
                 error: invalid_token
                 error_description: Caller bearer token is missing, inactive, or has the wrong audience
-
     IntrospectionForbidden:
       description: Authenticated caller is not authorized for Data Source introspection
       content:
