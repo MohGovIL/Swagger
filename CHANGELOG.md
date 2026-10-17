@@ -1,4 +1,75 @@
-# PCM Swagger/OpenAPI Implementer Changelog: 0.3.4
+# PCM Swagger/OpenAPI Implementer Changelog: 0.4.1
+
+## Release 0.4.1 — changes from 0.3.4
+
+This release upgrades the combined, FHIR and OAuth2 contracts together from 0.3.4 to 0.4.1. The migration below describes the net changes between those published contracts; it consolidates the authorization changes into their final supported shapes. Earlier release notes are retained below as historical guidance and are superseded where this section specifies different behavior.
+
+### Breaking: Data Source authorization moves to RAR
+
+- All `private_key_jwt` assertions now authenticate the client only. Remove `extensions.hl7-b2b` and all caller-derived business authorization claims; unknown claims are rejected. The opaque client ID, exact receiving endpoint audience, maximum 300-second assertion lifetime and fresh single-use `jti` requirements continue to apply.
+- Data Source `client_credentials` requests require one exact active `Endpoint.address` resource, an unfiltered resource/interaction `scope`, and one `authorization_details` form parameter. Serialize this parameter as a JSON array containing exactly one object of type `https://pcm.fhir.health.gov.il/authorization-details/fhir-data-access`, then form-encode the string once. Duplicate JSON keys, semantic context items and singleton form parameters are rejected.
+- Consent access supplies only the Consent business identifier in `fhirContext`, with role `authorization-basis`. It replaces the old absolute Consent URL in the B2B assertion. PCM derives the Patient, HealthcareService, organization, purpose and effective scope from authoritative state; callers must not supply these derived values.
+- Presence and patient authentication supply a Contract business identifier as the authorization basis plus the supported Patient identifiers. Dependent discovery supplies only its Contract identifier; PCM obtains the representative identity and freshness from the same authenticated server-side flow. A standalone external token request cannot establish that trusted context.
+- The separate `PresenceTokenRequest` branch is replaced by the common RAR Data Source request. Management, authorization-code/PKCE and introspection-caller grants retain their existing flows; management and introspection-caller requests do not carry `authorization_details`.
+
+### Breaking: effective token and introspection context
+
+- Data Source token responses now include the compiled `authorization_details` and effective `scope`. Active introspection returns the same decision, with `fhirContext` nested under `authorization_details[0]`; top-level `fhirContext`, `patient` and `cnf` are prohibited. Replace the previous Data Source/online-presence/batch-presence response variants with the common active response and its four typed authorization-detail scenarios: Consent, presence, authentication and discovery.
+- Consent decisions retain HealthcareService context and a PCM-derived `organization_id`. Contract decisions omit both; their business identifier selects the locally configured workflow. Runtime Contract retrieval is not expected for ordinary scope/context enforcement. `pcm_authentication_context` continues to describe issuance authentication evidence without binding the Bearer token to a certificate.
+- For `patient/` scopes, resolve exactly one authorization-patient system/value to exactly one local Patient logical id and establish that patient context; missing or ambiguous resolution denies access. System scopes do not establish a single Patient compartment, even for one-patient presence. Mixed `patient/` and `system/` prefixes are unsupported.
+- The issued grant is fixed. PCM rechecks mutable dependencies at introspection; narrowing or invalidating changes return privacy-safe `{"active":false}` rather than modifying the grant. Source additions never widen issued tokens or reactivate invalidated ones. Positive results may be cached only until their returned `exp`.
+- Data Source token lifetimes are bounded by all known authorization deadlines, with environment maxima of 30 seconds in production and 86400 seconds in test. Use returned `expires_in` and `exp`; a grant may expire sooner than those maxima. Tokens remain opaque Bearer tokens without refresh tokens.
+
+### New capability: read-only system authorization Contracts
+
+The FHIR API adds `GET /Contract`, form-encoded `POST /Contract/_search`, and `GET`/`HEAD /Contract/{id}`. The FHIR surface grows from 27 to 31 operations. Search supports `_id`, `identifier`, `status`, `issued`, `_lastUpdated` and `_count` (1–100), with authorization reapplied to continuation pages. Unknown filters are rejected; invisible records are omitted from searches and unknown or unauthorized reads return `404`.
+
+- `PCMSystemAuthorizationContract`, under the common `PCMDataAccessAuthorizationContract` shape, represents one recipient and one immutable workflow selected by `Contract.subType`: `presence-check`, `patient-authentication` or `dependent-discovery`. Contracts include a title, explanatory `term.text`, informational example queries and stable business identifiers under `http://pcm.fhir.health.gov.il/identifier/pcm-data-access-authorization-id`. System grants are self-contained and have no HealthcareService dependency.
+- Only `executed` grants within their `applies` period and current eligibility may authorize. `terminated`, `revoked` and `entered-in-error` are terminal. Issuance and validity dates require full timestamps with seconds and timezone; Period boundaries are inclusive, and expiry may be absent. Date eligibility is checked independently of stored status.
+- PCM manages explicit Data Source membership at `term.asset.context.reference`; an absent list grants no source access. Source/parent Organization, Endpoint and workflow eligibility remain necessary. Source removal invalidates affected decisions at subsequent introspection.
+- Entitled PCM clients and explicitly listed Data Sources can read applicable grants; Service Providers have no default visibility. Read access does not confer token-issuance entitlement. Participant create, update, PATCH, delete, history and include interactions are unsupported.
+
+### Scope enforcement and workflow boundaries
+
+| Workflow | Coarse requested scope | Effective authorization requirements |
+| --- | --- | --- |
+| Consent | Applicable `patient/` resource scopes | PCM derives the patient, service policy and permitted disclosure from the Consent. |
+| Presence | `system/Patient.s` | One or more distinct patient identifiers, authorized identifier-set search and count-only disclosure. |
+| Home-HMO authentication | `patient/Patient.s` | Exactly one patient, the verified home HMO, and the prescribed contact projection. |
+| Dependent discovery | `system/Patient.s system/RelatedPerson.s` | Trusted post-authentication representative context, constrained searches and workflow projections. |
+
+Every system-workflow resource scope carries the `patientDemographics` information-bucket predicate; the RelatedPerson discovery scope also carries the `hmo-dependent-discovery` tag. Discovery's Patient scope retains its identifier-based reverse chain, and candidate eligibility uses the same matching RelatedPerson record. Authentication/discovery require currently enrolled active HMO sources. Presence also checks the applicable patient EULA/source-list-management agreement, including for dependents.
+
+The Data Source must enforce each complete scope alternative, context, permitted operation, count and projection on every request, batch entry and page. Independent scopes grant a union, so each alternative must include all applicable constraints. Caller filters, missing count-only parameters or enlarged/omitted `_elements` must never broaden disclosure; reject deviations or safely impose the authorized limits. Presence patient-count and decoded RAR/token-form payload limits remain configurable; 100 patients is an initial rollout target, not a fixed public limit.
+
+### Assertions, browser transport and discovery
+
+- Client assertions support both ES256 and ES384. `ClientAssertionHeader` requires `alg` and `typ=JWT` and accepts optional `kid`; SMART clients must include `kid`. Its current value is the unpadded base64url SHA-256 JWK thumbprint under RFC 7638, including for ES384. It identifies the signing public key and is distinct from a certificate thumbprint.
+- A supplied `kid` must uniquely select an approved signing key for the client; unknown, malformed or mismatched values fail without fallback. Omission uses client-ID-based key resolution for either algorithm. Certificate registration remains out of band. Public JWKS, dynamic registration and PAR are not introduced.
+- Browser `/authorize`, associated login/approval traffic and redirect callbacks use HTTPS without requiring a client certificate. Backend discovery, metadata, token exchange, introspection and FHIR traffic retain mTLS. This supersedes the earlier requirement for mTLS on every HTTP endpoint.
+- OAuth metadata adds the origin-relative RFC 8414 route `/.well-known/oauth-authorization-server/api/fhir-service/r4`, with environment-origin servers on that Path Item. The equivalent alias under the PCM base remains supported; SMART discovery remains under the FHIR base. The OAuth surface grows from four to five operations. Metadata advertises the RAR type and both signing algorithms; algorithm arrays remain extensible.
+
+### FHIR schemas, identifiers, errors and examples
+
+- OAuth Patient identifiers and Consent patient-reference schemas add the explicit Palestinian national-ID system `http://fhir.health.gov.il/identifier/pna-national-id`. Israeli checksum and leading-zero rules, recognized passport namespaces and exact synthetic identifiers `1` and `2` remain applicable. Interface support for synthetic HTEST integration identifiers does not establish PCM login eligibility: PCM login rejects synthetic identifiers and Israeli passports, and Israeli nationals holding an Israeli ID must use it.
+- Search-Bundle entries now require absolute `fullUrl` identities. Production examples use the production base; test identities use the test base. Contract search has its own typed Bundle and Contract-specific bad-request/forbidden examples.
+- Information buckets now permit multiple `taggedDetails` subextensions; the previous three-part overall maximum and single-`taggedDetails` maximum are removed. Exactly one bucket and one history-depth part remain required.
+- Service Provider creation clarifies that the client proposes the name and PCM validates and stores the authoritative value; later updates repeat it unchanged. Existing contact collection replacement, owned Endpoint identity and read-only certificate inventory rules remain in force.
+- Token errors distinguish malformed/mixed requests (`invalid_request`), invalid authorization basis/context (`invalid_authorization_details`), unsupported/excessive scopes (`invalid_scope`), target failures (`invalid_target`), client eligibility/authentication failures and authorization-code/PKCE failures. Inactive introspection remains deliberately non-diagnostic.
+- Inline FHIR examples are consolidated into named components, and Contract lifecycle/source-membership, authentication and discovery examples are added. OAuth examples cover RAR forms, effective scopes, production/test responses, both signing algorithms, optional key selection and certificate correlation. National-ID examples use checksum-valid illustrative values while preserving leading zeros; this corrects examples rather than introducing a new checksum rule.
+- All three API versions and embedded CapabilityStatement metadata advance to 0.4.1. The combined contract explicitly references both security schemes, and the Redoc HTML reference is rebuilt from the combined entry point.
+
+### Migration checklist and continuing requirements
+
+1. Replace B2B assertion authorization with authentication-only assertions and the appropriate RAR request; regenerate clients for the new request, response and Contract schemas.
+2. Parse nested authorization context and distinguish patient from system enforcement. Configure Contract business-identifier/workflow mappings and enforce exact audiences, all scope alternatives, projections, counts, batch entries and pages.
+3. Configure the RFC 8414 discovery location, signing algorithms and signing-key selection; separate browser HTTPS from backend mTLS.
+4. Verify grant status/period/source removal, token expiry and cached-introspection behavior, including production-equivalent freshness tests in the longer-lived test environment.
+5. Update identifier handling and example fixtures, and accept multiple information-bucket `taggedDetails` where applicable.
+
+Production/test API bases and published canonical/policy identifiers retain their 0.3.4 values. Existing Organization, Endpoint, HealthcareService and Consent participant interactions remain available. HealthcareService provider-instance business-status transitions and the catalog-update operation continue to apply. Consent submit/deactivate still require exactly one fixed `policy` with authority `https://www.gov.il/` and URI `https://pcm.fhir.health.gov.il/consent-policy/medical-information-mobility-law-2024`; `policyRule` remains prohibited. Organizational sharing, participant grant-management and Subscription endpoints are not enabled.
+
+## Earlier release: 0.3.4
 
 Release 0.3.4 aligns the combined entry point, FHIR IG version, CapabilityStatement, discovery metadata, examples, and implementation guides. Production FHIR and OAuth2 now share `https://pcm2m.health.gov.il/api/fhir-service/r4`; test uses `https://pcm2mtest.health.gov.il/api/fhir-service/r4`. Every endpoint still requires mTLS. Runtime URLs change; canonical, identifier, policy, and terminology URIs do not.
 

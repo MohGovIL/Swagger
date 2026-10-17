@@ -1,22 +1,31 @@
 openapi: 3.1.0
 info:
   title: PCM API (FHIR + OAuth2)
-  version: "0.3.4"
+  version: "0.4.1"
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   description: |
     Combined OpenAPI entry point that references the FHIR and OAuth2 specifications.
+    Data Source authorization uses RFC 9396 authorization_details with authentication-only
+    private_key_jwt. PCM system workflows use self-contained read-only Contract grants; Contract.subType selects their scope and disclosure rules. Contract OAuth context omits HealthcareService; Consent context retains it. Contracts use executed/terminated/revoked lifecycle states, explicit PCM-managed source lists and optional expiry.
     The production PCM FHIR and OAuth2 base is
     `https://pcm2m.health.gov.il/api/fhir-service/r4`; the test base is
     `https://pcm2mtest.health.gov.il/api/fhir-service/r4`. Both protocols share
-    the selected environment base, including referenced Path Items. Access-token
-    lifetime is 30 seconds in production and 86400 seconds in test; clients use
+    the selected environment base, except RFC 8414 discovery, whose Path Item
+    explicitly uses the environment origin. Access-token
+    maximum lifetime is 30 seconds in production and 86400 seconds in test; clients use
     returned expires_in and exp values. Participant hosts under
     `example.org` are placeholders. Canonical, identifier-system, and other named
-    protocol URIs remain the published identifiers. Every PCM HTTP endpoint
-    requires mTLS, including discovery, metadata, authorization, token,
-    introspection, and FHIR interactions.
+    protocol URIs remain the published identifiers. PCM API connections require mTLS, including discovery, metadata, token,
+    introspection, and FHIR interactions. Browser requests to /authorize and
+    associated interactive login/approval pages use HTTPS without requiring a
+    client certificate. Backend client assertions support ES256 and ES384 and
+    accept optional kid, currently the unpadded base64url-encoded SHA-256 JWK
+    thumbprint under RFC 7638. A supplied kid must select an approved signing key
+    for the client; an invalid value fails without fallback. If absent,
+    PCM resolves the key by client ID for either algorithm.
+    SMART clients must include kid.
     Public FHIR POST/PUT interactions use closed request projections and reject
     prohibited content atomically with OperationOutcome responses. MoH/PCM owns
     Organization.active; Data Sources expose runtime availability through the
@@ -29,9 +38,9 @@ info:
     to read under the same resource-visibility rules; they never widen access.
 servers:
   - url: https://pcm2mtest.health.gov.il/api/fhir-service/r4
-    description: Test PCM FHIR and OAuth2 base. Every endpoint requires mTLS.
+    description: Test PCM FHIR and OAuth2 base. API calls require mTLS; browser authorization uses HTTPS without a client certificate.
   - url: https://pcm2m.health.gov.il/api/fhir-service/r4
-    description: Production PCM FHIR and OAuth2 base. Every endpoint requires mTLS.
+    description: Production PCM FHIR and OAuth2 base. API calls require mTLS; browser authorization uses HTTPS without a client certificate.
 
 tags:
   - name: Organization
@@ -39,9 +48,11 @@ tags:
   - name: Endpoint
     description: FHIR server endpoints for data sources.
   - name: HealthcareService
-    description: Canonical catalog services and provider service registrations.
+    description: Consent catalog services and provider registrations.
   - name: Consent
     description: Consent request creation, owned consent read/search, and owned consent deactivation. Deletion is not supported.
+  - name: Contract
+    description: Read-only PCM system authorization grants.
   - name: CapabilityStatement
     description: Server metadata and supported interactions.
   - name: SMART
@@ -56,6 +67,8 @@ security:
 paths:
   /.well-known/smart-configuration:
     $ref: "./openapi-fhir.yaml#/paths/~1.well-known~1smart-configuration"
+  /.well-known/oauth-authorization-server/api/fhir-service/r4:
+    $ref: "./openapi-oauth.yaml#/paths/~1.well-known~1oauth-authorization-server~1api~1fhir-service~1r4"
   /.well-known/oauth-authorization-server:
     $ref: "./openapi-oauth.yaml#/paths/~1.well-known~1oauth-authorization-server"
   /authorize:
@@ -93,6 +106,16 @@ paths:
   /introspect:
     $ref: "./openapi-oauth.yaml#/paths/~1introspect"
 
+  /Contract:
+    $ref: "./openapi-fhir.yaml#/paths/~1Contract"
+  /Contract/_search:
+    $ref: "./openapi-fhir.yaml#/paths/~1Contract~1_search"
+  /Contract/{id}:
+    $ref: "./openapi-fhir.yaml#/paths/~1Contract~1{id}"
+
 components:
   securitySchemes:
-    $ref: "./openapi-fhir.yaml#/components/securitySchemes"
+    mtlsTransport:
+      $ref: "./openapi-fhir.yaml#/components/securitySchemes/mtlsTransport"
+    bearerAuth:
+      $ref: "./openapi-fhir.yaml#/components/securitySchemes/bearerAuth"
