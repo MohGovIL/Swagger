@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PCM API (FHIR + OAuth2)
-  version: "0.4.1"
+  version: "0.4.2"
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -9,6 +9,9 @@ info:
     Combined OpenAPI entry point that references the FHIR and OAuth2 specifications.
     Data Source authorization uses RFC 9396 authorization_details with authentication-only
     private_key_jwt. PCM system workflows use self-contained read-only Contract grants; Contract.subType selects their scope and disclosure rules. Contract OAuth context omits HealthcareService; Consent context retains it. Contracts use executed/terminated/revoked lifecycle states, explicit PCM-managed source lists and optional expiry.
+    Contract.type has a required binding to the PCM Authorization Contract Type ValueSet
+    (`http://pcm.fhir.health.gov.il/ValueSet/pcm-authorization-type`), containing only
+    `data-access-authorization` from the PCM Authorization Vocabulary.
     The production PCM FHIR and OAuth2 base is
     `https://pcm2m.health.gov.il/api/fhir-service/r4`; the test base is
     `https://pcm2mtest.health.gov.il/api/fhir-service/r4`. Both protocols share
@@ -18,7 +21,8 @@ info:
     returned expires_in and exp values. Participant hosts under
     `example.org` are placeholders. Canonical, identifier-system, and other named
     protocol URIs remain the published identifiers. PCM API connections require mTLS, including discovery, metadata, token,
-    introspection, and FHIR interactions. Browser requests to /authorize and
+    introspection, and FHIR interactions. /authorize supports GET with query parameters
+    and POST with application/x-www-form-urlencoded parameters. Browser requests to /authorize and
     associated interactive login/approval pages use HTTPS without requiring a
     client certificate. Backend client assertions support ES256 and ES384 and
     accept optional kid, currently the unpadded base64url-encoded SHA-256 JWK

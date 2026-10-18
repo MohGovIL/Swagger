@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PCM OAuth2 API
-  version: 0.4.1
+  version: 0.4.2
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -24,7 +24,7 @@ info:
     certificate-bound access tokens. MoH/PCM exclusively controls participant
     Organization.active. A Data Source controls runtime technical availability
     through the status of its currently referenced participant Endpoint.
-     Release 0.4.1 uses authentication-only private_key_jwt for every grant and RFC 9396 authorization_details for Consent and system-policy Data Source access. Legacy B2B assertion extensions and top-level introspection fhirContext are not accepted.
+     Release 0.4.2 uses authentication-only private_key_jwt for every grant and RFC 9396 authorization_details for Consent and system-policy Data Source access. Legacy B2B assertion extensions and top-level introspection fhirContext are not accepted.
 servers:
 - url: https://pcm2mtest.health.gov.il/api/fhir-service/r4
   description: Test PCM OAuth2 origin. API calls require mTLS; browser authorization uses HTTPS without a client certificate.
@@ -143,9 +143,12 @@ paths:
       tags:
       - OAuth2
       operationId: authorizeSmartApplication
-      summary: Start standalone SMART authorization
+      summary: Start standalone SMART authorization using GET
       description: |
-        Starts the standalone SMART authorization-code flow. The client uses its
+        Starts the standalone SMART authorization-code flow using browser navigation
+        with URL-encoded query parameters. PCM also supports POST /authorize with
+        the same parameters in an application/x-www-form-urlencoded browser form body.
+        The client uses its
         assigned Service Provider application `client_id`, exact registered
         redirect URI, PKCE S256, and the exact PCM FHIR base as `aud`. The client
         requests the standard SMART App Launch v2 patient-level resource scopes
@@ -168,29 +171,24 @@ paths:
         in: query
         required: true
         schema:
-          type: string
-          const: code
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/response_type'
       - name: client_id
         in: query
         required: true
         schema:
-          type: string
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/client_id'
         description: Opaque PCM-assigned OAuth client identifier for the Service Provider application.
       - name: redirect_uri
         in: query
         required: true
         schema:
-          type: string
-          format: uri
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/redirect_uri'
         description: Exact registered standalone SMART redirect URI.
       - name: scope
         in: query
         required: true
         schema:
-          type: string
-          minLength: 1
-          pattern: '^(?!user/)(?!.* user/)(?!.*(?:\?|&)_filter(?:=|&|$))\S+(?: \S+)*$'
-          example: patient/*.rs
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/scope'
         description: |
           Space-delimited SMART App Launch v2 patient-level resource-scope
           string. PCM accepts standard `patient/...` SMART v2 syntax and does
@@ -205,31 +203,23 @@ paths:
         in: query
         required: true
         schema:
-          type: string
-          minLength: 1
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/state'
         description: Unpredictable client-generated value validated after redirect.
       - name: code_challenge
         in: query
         required: true
         schema:
-          type: string
-          minLength: 43
-          maxLength: 128
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/code_challenge'
       - name: code_challenge_method
         in: query
         required: true
         schema:
-          type: string
-          const: S256
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/code_challenge_method'
       - name: aud
         in: query
         required: true
         schema:
-          type: string
-          format: uri
-          enum:
-          - https://pcm2mtest.health.gov.il/api/fhir-service/r4
-          - https://pcm2m.health.gov.il/api/fhir-service/r4
+          $ref: '#/components/schemas/SmartAuthorizationRequest/properties/aud'
         description: Exact PCM FHIR REST API base for the environment being called. A request to
           the test authorization endpoint must carry the test base; a request to production must
           carry the production base. Never mix the two within one flow.
@@ -258,6 +248,51 @@ paths:
                 error:
                   summary: Authorization error response
                   value: https://app.hospital-a.example.org/pcm/oauth2/callback?error=access_denied&state=pcm-state-4e8b2d
+        '400':
+          $ref: '#/components/responses/OAuthError'
+    post:
+      tags:
+      - OAuth2
+      operationId: authorizeSmartApplicationPost
+      summary: Start standalone SMART authorization using POST
+      description: |
+        Starts the same standalone SMART authorization-code flow as GET /authorize.
+        The application submits the authorization parameters through the browser as
+        an application/x-www-form-urlencoded form body instead of a query string.
+        The required parameters, client-selected patient-level scopes, authorization
+        policy, exact environment-specific aud, PKCE S256, state validation, and
+        exact registered redirect-URI matching are the same for both methods.
+        URL-encode each complete form value once, including scope constraints
+        containing ampersands. Browser authorization, associated login/approval
+        pages, and the redirect callback use HTTPS without a client certificate.
+        Do not send a client assertion to this endpoint. The confidential application
+        backend exchanges the resulting code at POST /token over mTLS using a fresh
+        private_key_jwt and the matching PKCE verifier. PAR is not introduced.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SmartAuthorizationRequest'
+            examples:
+              standaloneSmartProduction:
+                summary: Standalone SMART authorization — production
+                description: Replace the illustrative client ID and callback with registered values and generate a fresh state and PKCE challenge for each flow.
+                value:
+                  response_type: code
+                  client_id: pcm-client-hospital-a
+                  redirect_uri: https://app.hospital-a.example.org/pcm/oauth2/callback
+                  scope: patient/*.rs
+                  state: pcm-state-4e8b2d
+                  code_challenge: E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
+                  code_challenge_method: S256
+                  aud: https://pcm2m.health.gov.il/api/fhir-service/r4
+      responses:
+        '200':
+          $ref: '#/paths/~1authorize/get/responses/200'
+        '302':
+          $ref: '#/paths/~1authorize/get/responses/302'
         '400':
           $ref: '#/components/responses/OAuthError'
   /token:
@@ -1770,6 +1805,64 @@ components:
       bearerFormat: Opaque
       description: OAuth2 bearer token accepted for introspection caller authentication.
   schemas:
+    SmartAuthorizationRequest:
+      type: object
+      description: Standalone SMART authorization parameters, sent in the GET query string or the POST
+        form body.
+      required:
+      - response_type
+      - client_id
+      - redirect_uri
+      - scope
+      - state
+      - code_challenge
+      - code_challenge_method
+      - aud
+      properties:
+        response_type:
+          type: string
+          const: code
+        client_id:
+          type: string
+          description: Opaque PCM-assigned OAuth client identifier for the Service Provider application.
+        redirect_uri:
+          type: string
+          format: uri
+          description: Exact registered standalone SMART redirect URI.
+        scope:
+          type: string
+          minLength: 1
+          pattern: '^(?!user/)(?!.* user/)(?!.*(?:\?|&)_filter(?:=|&|$))\S+(?: \S+)*$'
+          example: patient/*.rs
+          description: |
+            Space-delimited SMART App Launch v2 patient-level resource-scope
+            string. PCM accepts standard patient-level scope syntax, including
+            query constraints, search modifiers, chaining, and reverse chaining.
+            user/... scopes and _filter are unsupported. URL-encode the complete
+            value once so ampersands inside constraints remain part of scope
+            rather than becoming separate GET query parameters or POST form fields.
+            Requested scopes remain subject to client, user, service-definition,
+            and PCM authorization policy.
+        state:
+          type: string
+          minLength: 1
+          description: Unpredictable client-generated value validated after redirect.
+        code_challenge:
+          type: string
+          minLength: 43
+          maxLength: 128
+        code_challenge_method:
+          type: string
+          const: S256
+        aud:
+          type: string
+          format: uri
+          enum:
+          - https://pcm2mtest.health.gov.il/api/fhir-service/r4
+          - https://pcm2m.health.gov.il/api/fhir-service/r4
+          description: Exact PCM FHIR REST API base for the environment being called. A request to the
+            test authorization endpoint must carry the test base; a request to production must carry
+            the production base. Never mix the two within one flow.
     OAuthAuthorizationServerMetadata:
       type: object
       description: |
