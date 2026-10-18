@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: PCM FHIR API
-  version: 0.4.1
+  version: 0.4.2
   license:
     name: Apache-2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -2445,6 +2445,10 @@ components:
         type:
           type: object
           additionalProperties: false
+          description: >-
+            Required binding to the PCM Authorization Contract Type ValueSet
+            (http://pcm.fhir.health.gov.il/ValueSet/pcm-authorization-type).
+            Exactly one coding identifies data-access-authorization in the PCM Authorization Vocabulary.
           required:
           - coding
           properties:
@@ -8445,7 +8449,7 @@ components:
             If-Match updates are not supported.
         name: PcmCapabilityStatement
         title: PCM FHIR Capability Statement
-        version: 0.4.1
+        version: 0.4.2
         status: active
         experimental: false
         date: '2026-10-18'

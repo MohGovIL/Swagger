@@ -1,4 +1,23 @@
-# PCM Swagger/OpenAPI Implementer Changelog: 0.4.1
+# PCM Swagger/OpenAPI Implementer Changelog: 0.4.2
+
+## Release 0.4.2 — changes from 0.4.1
+
+This release upgrades the combined, FHIR and OAuth2 contracts together from 0.4.1 to 0.4.2. The changes below describe the net difference from the previously published contracts, consolidating the current source changelog without repeating changes already delivered in 0.4.1. Earlier release notes remain below as migration history.
+
+### New capability: browser POST authorization
+
+- `POST /authorize` starts the same standalone SMART authorization-code flow as the existing `GET /authorize`, using an `application/x-www-form-urlencoded` browser form body. The OAuth surface grows from five to six operations across the same five paths; the FHIR surface remains 18 paths and 31 operations.
+- Both methods use the shared `SmartAuthorizationRequest` schema and require the same eight fields: `response_type=code`, `client_id`, the exact registered `redirect_uri`, client-selected patient-level `scope`, unpredictable `state`, PKCE `code_challenge`, `code_challenge_method=S256`, and the exact environment FHIR base as `aud`. Existing GET parameter constraints are preserved through references to this schema.
+- URL-encode each complete query or form value once. In particular, ampersands inside scope constraints must remain within the scope value rather than becoming separate parameters. Patient-level scope policy and the prohibitions on `user/...` and `_filter` are unchanged.
+- POST reuses GET's `200 text/html`, registered-callback `302`, and OAuth `400` responses. Browser authorization, associated login/approval pages and callbacks continue to use HTTPS without a client certificate. Do not send a client assertion to `/authorize`; the backend still exchanges the code at `POST /token` over mTLS with a fresh `private_key_jwt`, the matching PKCE verifier and exact redirect URI. PAR is not introduced.
+- The new operation includes a production browser-form example. Existing GET integrations can continue unchanged; regenerate clients to expose the POST operation and shared request model where needed.
+
+### Contract type binding and release metadata
+
+- The combined description and FHIR Contract schema now explicitly document the required binding of `Contract.type` to `http://pcm.fhir.health.gov.il/ValueSet/pcm-authorization-type`, containing only `data-access-authorization` from the PCM Authorization Vocabulary. This clarifies the existing fixed single-coding constraint; it does not introduce a new payload restriction.
+- All three API versions and embedded CapabilityStatement metadata advance to 0.4.2. The combined Redoc HTML reference is rebuilt from the updated contracts.
+
+The 0.4.1 RAR requests, authentication-only assertions, effective token/introspection context, Contract lifecycle and source eligibility, signing algorithms, discovery routes, environment bases and token lifetimes remain unchanged. This release does not add FHIR interactions or participant Contract writes.
 
 ## Release 0.4.1 — changes from 0.3.4
 
